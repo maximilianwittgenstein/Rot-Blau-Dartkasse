@@ -43,6 +43,8 @@ nav.tabs button.on{background:#fff;color:var(--nacht);opacity:1}
 .filechip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dot{width:9px;height:9px;border-radius:50%;flex:none;background:#F2B233}
 .dot.ok{background:#3DD68C}.dot.err{background:#FF5470}
+.synchip{display:inline-flex;align-items:center;gap:6px;width:118px;height:22px;margin-top:4px;padding:0 9px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:.72rem;font-weight:600;cursor:pointer;line-height:1}
+.synchip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.synchip .dot{width:7px;height:7px}
 .ring{height:8px;background:repeating-linear-gradient(90deg,var(--rot) 0 30px,var(--blau-hell) 30px 60px)}
 
 main{max-width:1280px;margin:0 auto;padding:22px 20px 60px}
@@ -231,6 +233,21 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
 #msgDlg textarea{min-height:200px;font-size:.92rem}
 .pl{font-size:.78rem;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
 .pl-gruen{background:var(--ok-bg);color:var(--ok)}.pl-orange{background:var(--fp-bg);color:var(--fp)}.pl-rot{background:var(--rot);color:#fff}
+.pub-hero{display:grid;grid-template-columns:230px 1fr;gap:26px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 24px;margin-bottom:18px}
+.pub-hero .biglogo{margin:0}.pub-hero h2{font-size:1.9rem;margin:0 0 4px}.pub-lead{color:var(--muted);margin:0 0 14px}
+.pub-train{background:var(--nacht);color:#fff;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}.pub-train b{font-size:1.1rem}.pub-train span{opacity:.85;font-size:.95rem}
+.pub-train .btn{align-self:flex-start;margin-top:6px;text-decoration:none;background:#fff;color:var(--nacht);border-color:#fff}
+@media (max-width:700px){.pub-hero{grid-template-columns:1fr;text-align:center}.pub-hero .biglogo{max-width:200px;margin:0 auto}.pub-train{text-align:left}}
+.pub-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;align-items:start}@media (max-width:900px){.pub-grid{grid-template-columns:1fr}}
+.pub-news{padding:10px 0;border-bottom:1px solid var(--line)}.pub-news:last-child{border:0}.pub-news h4{margin:2px 0 4px;font-size:1.05rem}.pub-news p{margin:0 0 4px;white-space:pre-wrap}
+.panel a{color:var(--blau)}.panel a.btn{text-decoration:none;color:inherit}
+.sponsors{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.sp{display:grid;place-items:center;height:90px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px;text-decoration:none;color:var(--nacht);font-weight:700;text-align:center}
+.sp img{max-width:100%;max-height:72px;object-fit:contain}
+.insta{display:grid;gap:10px}.insta .instagram-media{min-width:0!important;margin:0!important}
+.liveres{display:flex;gap:12px;align-items:center;background:var(--rot);color:#fff;border-radius:14px;padding:12px 16px;margin-bottom:12px;text-decoration:none}
+.liveres b{display:block}.liveres span{flex:1}.liveres .go{flex:none;background:#fff;color:var(--rot);border-radius:10px;padding:8px 12px;font-weight:700;white-space:nowrap}
+.btn.live{background:var(--rot);border-color:var(--rot);color:#fff;text-decoration:none}
 /* Druck */
 #print{display:none}
 @media print{
@@ -263,7 +280,7 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
   <div class="top-inner">
     <div class="brand">
       <div class="logo" id="logoBox"></div>
-      <div><h1 id="clubName">DC Rot-Blau Wuppertal</h1><p>Vereins-App</p></div>
+      <div><h1 id="clubName">DC Rot-Blau Wuppertal</h1><button class="synchip" id="fileChip" data-act="tab" data-tab="einstellungen" title="Status des Online-Abgleichs"><i class="dot" id="fileDot"></i><span id="fileText">…</span></button></div>
     </div>
     <nav class="tabs" id="tabs">
       <button data-act="tab" data-tab="start">Start</button>
@@ -274,8 +291,6 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
       <button data-act="tab" data-tab="infos">Allgemeines</button>
       <button data-act="tab" data-tab="einstellungen">Einstellungen</button>
     </nav>
-    <button class="filechip" data-act="share" title="Aktuellen Stand per WhatsApp & Co. teilen"><span>Stand teilen</span></button>
-    <button class="filechip" id="fileChip" data-act="tab" data-tab="einstellungen" title="Speicherort"><i class="dot" id="fileDot"></i><span id="fileText">…</span></button>
   </div>
   <div class="ring"></div>
 </header>
@@ -290,6 +305,7 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
   <div class="row"><button class="btn primary" data-imp="merge">Zusammenführen</button><button class="btn" data-imp="replace">Ersetzen</button><button class="btn ghost" data-imp="cancel">Abbrechen</button></div></dialog>
 <input type="file" id="impFile" accept=".json,.txt,application/json,text/plain" hidden>
 <input type="file" id="logoFile" accept="image/*" hidden>
+<input type="file" id="spLogoFile" accept="image/*" hidden>
 
 <script>
 /* ===================== Grundlagen ===================== */
@@ -314,7 +330,7 @@ function normalize(d){const b=blank();d=d||{};
   s.prices=Object.assign({},b.settings.prices,(d.settings||{}).prices||{});
   s.fp=Object.assign({},b.settings.fp,(d.settings||{}).fp||{});
   s.roster=Array.isArray(s.roster)?s.roster:[];
-  return{...b,...d,app:'dartkasse',settings:s,batches:d.batches||[],matchdays:d.matchdays||[],sales:d.sales||[],moves:d.moves||[],deleted:d.deleted||[],members:d.members||[],events:d.events||[],rsvps:d.rsvps||[],posts:d.posts||[],admin:d.admin||{},team:d.team||[]}}
+  return{...b,...d,app:'dartkasse',settings:s,batches:d.batches||[],matchdays:d.matchdays||[],sales:d.sales||[],moves:d.moves||[],deleted:d.deleted||[],members:d.members||[],events:d.events||[],rsvps:d.rsvps||[],posts:d.posts||[],admin:d.admin||{},team:d.team||[],pub:d.pub||null}}
 const hasData=d=>d&&(d.matchdays.length||d.batches.length||d.sales.length||d.moves.length||d.events.length||d.posts.length||d.members.length);
 
 let D=blank();
@@ -381,20 +397,18 @@ async function writeFile(){
 function status(){
   const dot=document.getElementById('fileDot'),t=document.getElementById('fileText');
   dot.className='dot';
+  dot.parentElement.title='';
   if(typeof locked==='function'&&locked()){t.textContent=syncOn()?'Token prüfen':'Kein Token';return}
   if(typeof syncOn==='function'&&syncOn()){
     const tm=lastSync?new Date(lastSync).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'';
-    if(syncState==='err'){dot.classList.add('err');t.textContent='Abgleich-Fehler'}
-    else if(syncState==='busy'){t.textContent='Gleicht ab …'}
-    else if(syncState==='pending'){t.textContent='Änderung wird hochgeladen'}
-    else if(syncState==='offline'){t.textContent='Offline, gleicht später ab'}
-    else if(syncState==='ok'){dot.classList.add('ok');t.textContent='Online, Stand '+tm}
-    else{t.textContent='Online-Abgleich startet'}
+    const T={err:['Fehler','Abgleich-Fehler, Details unter Einstellungen'],busy:['Gleicht ab …','Daten werden abgeglichen'],pending:['Lädt hoch …','Änderung wird hochgeladen'],offline:['Offline','Offline, gleicht später ab'],ok:['Online '+tm,'Online, zuletzt abgeglichen um '+tm+' Uhr']}[syncState]||['Startet …','Online-Abgleich startet'];
+    if(syncState==='err')dot.classList.add('err');if(syncState==='ok')dot.classList.add('ok');
+    t.textContent=T[0];dot.parentElement.title=T[1];
     return}
-  if(fh&&fileState==='err'){dot.classList.add('err');t.textContent='Speichern fehlgeschlagen'}
-  else if(fh){dot.classList.add('ok');t.textContent=fileState==='saving'?'Speichert …':'Gespeichert: '+fhName}
-  else if(fhPending){t.textContent='Datei erneut verbinden'}
-  else{t.textContent=FS_OK?'Nur im Browser gespeichert':'Auf diesem Gerät gespeichert'}
+  if(fh&&fileState==='err'){dot.classList.add('err');t.textContent='Fehler'}
+  else if(fh){dot.classList.add('ok');t.textContent=fileState==='saving'?'Speichert …':'Gespeichert'}
+  else if(fhPending){t.textContent='Datei verbinden'}
+  else{t.textContent='Nur lokal'}
 }
 function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('dartkasse',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function idbSet(k,v){try{const db=await idb();await new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){}}
@@ -438,6 +452,7 @@ function mergeData(a,b){
   ['members','events','rsvps','posts'].forEach(k=>{const mp=new Map(a[k].map(x=>[x.id,x]));
     b[k].forEach(x=>{const e=mp.get(x.id);if(!e){a[k].push(x);mp.set(x.id,x)}else if((x.u||0)>(e.u||0)){Object.keys(e).forEach(q=>delete e[q]);Object.assign(e,x)}})});
   if((b.admin.u||0)>(a.admin.u||0))a.admin=b.admin;
+  if(((b.pub||{}).u||0)>((a.pub||{}).u||0))a.pub=b.pub;
   const del=new Set([...a.deleted,...b.deleted]);a.deleted=[...del];
   ['members','events','rsvps','posts'].forEach(k=>a[k]=a[k].filter(x=>!del.has(x.id)));
   a.matchdays=a.matchdays.filter(m=>!del.has(m.id));a.matchdays.forEach(m=>m.people=m.people.filter(p=>!del.has(p.id)));
@@ -532,7 +547,7 @@ async function ghPut(d,sha){
   if(!r.ok)throw mkErr(r.status);return true
 }
 function canon(d){const byId=a=>[...a].sort((x,y)=>x.id<y.id?-1:x.id>y.id?1:0);
-  return JSON.stringify({s:d.settings,st:d.settingsTs||0,l:d.logo||null,m:byId(d.matchdays).map(m=>({...m,people:byId(m.people)})),sa:byId(d.sales),b:byId(d.batches),mv:byId(d.moves),del:[...d.deleted].sort(),me:byId(d.members),ev:byId(d.events),rs:byId(d.rsvps),po:byId(d.posts),ad:d.admin||{},tm:byId(d.team||[])})}
+  return JSON.stringify({s:d.settings,st:d.settingsTs||0,l:d.logo||null,m:byId(d.matchdays).map(m=>({...m,people:byId(m.people)})),sa:byId(d.sales),b:byId(d.batches),mv:byId(d.moves),del:[...d.deleted].sort(),me:byId(d.members),ev:byId(d.events),rs:byId(d.rsvps),po:byId(d.posts),ad:d.admin||{},tm:byId(d.team||[]),pb:d.pub||null})}
 async function syncNow(){
   if(!syncOn())return;
   if(syncBusy){syncAgain=true;return}
@@ -596,10 +611,38 @@ function render(){
 }
 
 function bigLogo(){return`<img src="logo-full.png" alt="DC Rot-Blau Wuppertal" onerror="this.outerHTML=logoMarkup()">`}
+const PUBDEF={training:{day:'Donnerstag',time:'18:45',text:'Open Door: Wer Darts ausprobieren möchte, kommt einfach vorbei. Ohne Anmeldung, Pfeile sind da.'},
+  place:{name:'Fanprojekt Wuppertal',addr:'Wiesenstraße 118, 42105 Wuppertal',maps:'https://maps.app.goo.gl/KVQCybdaK3CHnRuC9'},mail:'',insta:'https://www.instagram.com/dc_rot_blau_wuppertal/',instaPosts:[],news:[],
+  sponsors:[{id:'sp1',name:'Waldhotel Eskeshof',url:'https://www.waldhotel-eskeshof.de',logo:'sponsor-eskeshof.png'},{id:'sp2',name:'Katzengold',url:'',logo:'sponsor-katzengold.png'}]};
+let PUB=null,pubLoaded=false,instaOn=false;
+const pubData=()=>Object.assign({},PUBDEF,PUB||{});
+const pubEdit=()=>Object.assign({},PUBDEF,D.pub||PUB||{});
+async function loadPublic(){try{const r=await fetch('public.json?t='+Date.now(),{cache:'no-store'});if(r.ok)PUB=await r.json()}catch(e){}pubLoaded=true;if(locked())render()}
+const safeUrl=u=>/^https?:\/\//i.test(String(u||'').trim())?String(u).trim():'';
+const mapsUrl=a=>{const m=safeUrl((pubData().place||{}).maps);return m||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a)};
+function vPublic(){const P=pubData();const t=P.training||{};
+  const news=[...(P.news||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6);
+  const posts=(P.instaPosts||[]).map(safeUrl).filter(Boolean).slice(0,3);
+  return`<section class="pub-hero"><div class="biglogo">${bigLogo()}</div>
+    <div><h2>Darts in Wuppertal</h2><p class="pub-lead">Steel-Darts mit Herz, Training mit offener Tür. Schau einfach vorbei!</p>
+    <div class="pub-train"><b>🎯 Training: jeden ${esc(t.day||'Donnerstag')} ab ${esc(t.time||'18:45')} Uhr</b><span>${esc(t.text||'')}</span>
+    ${P.place&&P.place.addr?`<a class="btn" href="${mapsUrl((P.place.name?P.place.name+', ':'')+P.place.addr)}" target="_blank" rel="noopener">📍 ${esc(P.place.name||'')}${P.place.name?', ':''}${esc(P.place.addr)}</a>`:''}</div></div></section>
+  <div class="pub-grid"><div>
+    <div class="panel"><h3 style="margin-bottom:6px">Neuigkeiten</h3>${news.length?news.map(n=>`<article class="pub-news"><span class="muted small">${esc(fmtDate(n.date))}</span><h4>${esc(n.title)}</h4>${n.text?`<p>${esc(n.text)}</p>`:''}${safeUrl(n.link)?`<a href="${esc(safeUrl(n.link))}" target="_blank" rel="noopener">Mehr erfahren →</a>`:''}</article>`).join(''):'<p class="muted">Bald gibt es hier Neuigkeiten.</p>'}</div>
+    ${P.insta||posts.length?`<div class="panel"><div class="row" style="justify-content:space-between"><h3>Instagram</h3>${safeUrl(P.insta)?`<a class="btn ghost" href="${esc(safeUrl(P.insta))}" target="_blank" rel="noopener">Zum Profil</a>`:''}</div>
+      ${!posts.length&&safeUrl(P.insta)?`<p class="small" style="margin:6px 0 0">Fotos und News vom Spielbetrieb findest du auf unserem Kanal <a href="${esc(safeUrl(P.insta))}" target="_blank" rel="noopener">@${esc((safeUrl(P.insta).match(/instagram\.com\/([^/?#]+)/)||[])[1]||'instagram')}</a>.</p>`:''}
+      ${posts.length?(instaOn?`<div class="insta">${posts.map(u=>`<blockquote class="instagram-media" data-instgrm-permalink="${esc(u)}" data-instgrm-version="14"><a href="${esc(u)}" target="_blank" rel="noopener">Beitrag auf Instagram ansehen</a></blockquote>`).join('')}</div>`
+        :`<div class="insta-consent"><p class="small">Beim Laden der Beiträge werden Daten an Instagram (Meta) übertragen.</p><button class="btn primary" data-act="instaLoad">Die letzten ${posts.length} Beiträge laden</button></div>`):''}</div>`:''}
+  </div><div>
+    <div class="panel"><h3 style="margin-bottom:6px">Kontakt</h3>
+      ${P.mail?`<p><a href="mailto:${esc(P.mail)}">✉️ ${esc(P.mail)}</a></p>`:''}
+      <p><b>Spielort</b><br>${esc(P.place&&P.place.name||'')}<br>${esc(P.place&&P.place.addr||'')}</p>
+      ${P.place&&P.place.addr?`<a class="btn" href="${mapsUrl((P.place.name?P.place.name+', ':'')+P.place.addr)}" target="_blank" rel="noopener">In Google Maps öffnen</a>`:''}</div>
+    ${(P.sponsors||[]).length?`<div class="panel"><h3 style="margin-bottom:10px">Unsere Sponsoren</h3><div class="sponsors">${P.sponsors.map(sp=>{const inner=sp.logo?`<img src="${esc(sp.logo)}" alt="${esc(sp.name)}">`:`<span>${esc(sp.name)}</span>`;return safeUrl(sp.url)?`<a class="sp" href="${esc(safeUrl(sp.url))}" target="_blank" rel="noopener" title="${esc(sp.name)}">${inner}</a>`:`<div class="sp" title="${esc(sp.name)}">${inner}</div>`}).join('')}</div></div>`:''}
+  </div></div>`}
 function vLocked(){
   const err=SY.revoked?`<p class="msg-err">${esc(SY.revoked)}</p>`:SY.blocked&&syncErr&&!ui.checking?`<p class="msg-err">${esc(syncErr)}</p>`:'';
-  return `<div class="lock"><div class="biglogo">${bigLogo()}</div>
-    <h2>Keine Daten vorhanden</h2><p class="muted">Nur sichtbar mit aktuellem Token.</p>
+  return vPublic()+`<div class="lock" style="margin-top:10px"><h2>Mitgliederbereich</h2><p class="muted">Keine Daten vorhanden. Nur sichtbar mit aktuellem Token.</p>
     <form data-form="unlock" class="panel">
       <label class="f">Token<input type="password" name="token" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
       <details><summary>Erweitert</summary><div class="grid2">
@@ -607,7 +650,7 @@ function vLocked(){
         <label class="f">Daten-Repository<input type="text" name="repo" value="${esc(SY.repo)}" autocapitalize="off" spellcheck="false"></label></div></details>
       <button class="btn primary" ${ui.checking?'disabled':''}>${ui.checking?'Token wird geprüft …':'Freischalten'}</button>${err}
     </form>
-    <p class="muted small">Den Token bekommst du von den Kassenverantwortlichen des Vereins.</p></div>`;
+    <p class="muted small">Den Token bekommst du von den Verantwortlichen des Vereins.</p></div>`;
 }
 function vSpieltag(){
   const mds=[...D.matchdays].sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created);
@@ -809,30 +852,9 @@ function vEinstellungen(){
       ${syncOn()?'<button type="button" class="btn" data-act="syncNow">Jetzt abgleichen</button><button type="button" class="btn ghost" data-act="syncOff">Auf diesem Gerät trennen</button>':''}</div>
     <p class="muted small">Der Token bleibt nur auf diesem Gerät gespeichert und wird nie geteilt oder exportiert.</p></form>
   <div class="panel"><h3 style="margin-bottom:8px">Stand weitergeben (ohne Online-Abgleich)</h3>
-    <p class="small" style="margin-top:0">Schicke den aktuellen Stand per WhatsApp an jemanden, der den nächsten Spieltag betreut. Er lädt ihn in seiner Dartkasse und schickt danach seinen Stand zurück.</p>
-    <div class="row"><button class="btn primary" data-act="share">Stand teilen</button><button class="btn" data-act="imp">Stand laden</button></div>
-    <p class="muted small">iPhone: Datei in WhatsApp antippen, „Teilen“ und „In Dateien sichern“ wählen, dann hier „Stand laden“.</p></div>
-  <div class="panel"><h3 style="margin-bottom:8px">Speicherort</h3>${fileBox}
-    <div class="row" style="margin-top:12px"><button class="btn" data-act="exp">Exportieren (Sicherungskopie)</button><button class="btn" data-act="imp">Importieren</button></div>
-    <p class="muted small">Für einen anderen Rechner: Kopiere den Ordner mit dieser HTML-Datei, der Datendatei und ggf. logo.png. Dort die HTML-Datei öffnen und „Vorhandene Datendatei öffnen“ wählen.</p></div>
-  <div class="panel"><h3 style="margin-bottom:10px">Preise</h3><div class="tablewrap"><table><thead><tr><th>Getränk</th><th>Verkaufspreis (€)</th><th>Davon ans Fanprojekt, wenn es dessen Flasche ist (€)</th></tr></thead><tbody>
-    ${CATS.map(c=>`<tr><td>${c.i} ${c.n}</td><td><input type="text" inputmode="decimal" data-change="set" data-path="prices.${c.k}" value="${String(s.prices[c.k]).replace('.',',')}" style="width:110px"></td><td><input type="text" inputmode="decimal" data-change="set" data-path="fp.${c.k}" value="${String(s.fp[c.k]).replace('.',',')}" style="width:110px"></td></tr>`).join('')}</tbody></table></div>
-    <p class="muted small">Preisänderungen gelten für neue Buchungen. Bereits gebuchte Getränke behalten ihren Preis.</p></div>
-  <div class="panel"><div class="grid2"><label class="f">Vereinsname<input type="text" data-change="set" data-path="club" value="${esc(s.club)}"></label>
-    <label class="f">Startbestand der Kasse (€)<input type="text" inputmode="decimal" data-change="set" data-path="startKasse" value="${String(s.startKasse).replace('.',',')}"></label>
-    <label class="f">Pfand je Kasten, leer (€)<input type="text" inputmode="decimal" data-change="set" data-path="pfandKasten" value="${String(s.pfandKasten).replace('.',',')}"></label>
-    <label class="f">Pfand je Flasche (€)<input type="text" inputmode="decimal" data-change="set" data-path="pfandFlasche" value="${String(s.pfandFlasche).replace('.',',')}"></label>
-    <label class="f">Startbestand Mannschaftskasse (€)<input type="text" inputmode="decimal" data-change="set" data-path="teamStart" value="${String(s.teamStart||0).replace('.',',')}"></label>
-    <label class="f">Spieler: ab hier orange (knapp)<input type="text" inputmode="numeric" data-change="set" data-path="playersMin" value="${s.playersMin||6}"></label>
-    <label class="f">Spieler: ab hier grün (vollständig)<input type="text" inputmode="numeric" data-change="set" data-path="playersOk" value="${s.playersOk||8}"></label>
-    <label class="f">Bestandswarnung ab (Flaschen)<input type="text" inputmode="numeric" data-change="set" data-path="lowStock" value="${s.lowStock||10}"></label>
-    <label class="f">Vereins-E-Mail (Absender)<input type="email" data-change="setTxt" data-path="clubMail" value="${esc(s.clubMail||'')}" placeholder="z. B. rot-blau@gmx.de"></label></div></div>
-  <div class="panel"><h3 style="margin-bottom:4px">Stammspieler</h3><p class="muted small" style="margin-top:0">Ein Name pro Zeile. Sie erscheinen am Spieltag als Schnellauswahl.</p>
-    <textarea data-change="roster">${esc(s.roster.join('\n'))}</textarea></div>
-  <div class="panel"><h3 style="margin-bottom:8px">Logo</h3><p class="muted small" style="margin-top:0">Lege das Vereinslogo als <b>logo.png</b> in denselben Ordner wie diese Datei, oder lade es hier hoch. Hochgeladene Logos werden in der Datendatei mitgespeichert.</p>
-    <div class="row"><button class="btn" data-act="logoUp">Logo hochladen</button>${D.logo?'<button class="btn ghost" data-act="logoDel">Hochgeladenes Logo entfernen</button>':''}</div></div>
-  <div class="panel"><h3 style="margin-bottom:8px">Alles zurücksetzen</h3><p class="muted small" style="margin-top:0">Löscht alle Spieltage, Einkäufe und Buchungen. Exportiere vorher eine Sicherungskopie.</p>
-    <button class="btn danger" data-act="reset">Alle Daten löschen</button></div>`;
+    <p class="small" style="margin-top:0">Erzeugt eine Sicherungskopie des aktuellen Stands, z. B. zum Verschicken per WhatsApp. Geladen werden kann sie nur in der Verwaltung.</p>
+    <div class="row"><button class="btn" data-act="share">Stand teilen</button></div></div>
+`;
 }
 
 /* ===================== Druck ===================== */
@@ -1022,6 +1044,7 @@ function vEvForm(){const isNew=ui.evForm==='new';const e=isNew?{type:'auswaerts'
     <label class="f">Uhrzeit<input type="time" name="time" value="${e.time||''}"></label>
     <label class="f">Ort, Adresse<input type="text" name="place" value="${esc(e.place||'')}" placeholder="z. B. Spielstätte des Gegners"></label>
     <label class="f">Treffpunkt, Abfahrt<input type="text" name="meet" value="${esc(e.meet||'')}" placeholder="z. B. 18:30 am Fanprojekt"></label>
+    <label class="f">Link zu Live-Ergebnissen<input type="url" name="live" value="${esc(e.live||'')}" placeholder="kommt meist erst am Spieltag"></label>
     ${isNew?`<label class="f">Wiederholen<select name="rep"><option value="1">einmalig</option>${[2,3,4,6,8,10,12].map(n=>`<option value="${n}">wöchentlich, ${n} Termine</option>`).join('')}</select></label>`:''}
   </div><label class="f" style="margin-top:12px">Notiz<textarea name="note" style="min-height:70px">${esc(e.note||'')}</textarea></label>
   <datalist id="evTitles">${teamTitles().map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
@@ -1044,7 +1067,7 @@ function vEvent(e){
   h+=`<div class="rsvp">${[['ja','Dabei'],['vl','Vielleicht'],['nein','Nicht dabei']].map(([k,l])=>`<button class="${mine.status===k?'on '+k:''}" data-act="rsvp" data-ev="${e.id}" data-s="${k}">${l}</button>`).join('')}</div>`;
   if(ui.reason&&ui.reason.ev===e.id)h+=`<form class="reason" data-form="reason"><input type="text" name="r" id="reasonIn" placeholder="${ui.reason.s==='nein'?'Warum kannst du nicht? (Pflicht)':'Woran hängt es? (Pflicht)'}" value="${esc(mine.status===ui.reason.s?mine.reason||'':'')}" required autocomplete="off"><button class="btn primary">Speichern</button><button type="button" class="btn ghost" data-act="reasonCancel">Abbrechen</button></form>`;
   else if(mine.reason&&mine.status!=='ja')h+=`<div class="note">Deine Begründung: ${esc(mine.reason)}</div>`;
-  h+=`<div class="row" style="margin-top:10px"><button class="btn ghost" data-act="evOpen" data-ev="${e.id}">${open?'Weniger anzeigen':(e.type==='auswaerts'?'Teilnehmer und Fahrten':'Teilnehmer anzeigen')}</button><button class="btn ghost" data-act="ics" data-ev="${e.id}">📅 In Kalender</button><button class="btn ghost" data-act="msgEv" data-ev="${e.id}">📣 Benachrichtigen</button>${e.type==='heim'||e.type==='training'?`<button class="btn blue" data-act="evKasse" data-ev="${e.id}">Getränke erfassen</button>`:''}</div>`;
+  h+=`<div class="row" style="margin-top:10px"><button class="btn ghost" data-act="evOpen" data-ev="${e.id}">${open?'Weniger anzeigen':(e.type==='auswaerts'?'Teilnehmer und Fahrten':'Teilnehmer anzeigen')}</button>${safeUrl(e.live)?`<a class="btn live" href="${esc(safeUrl(e.live))}" target="_blank" rel="noopener">📊 Live-Ergebnisse</a>`:''}${e.type==='heim'||e.type==='auswaerts'?`<button class="btn ghost" data-act="evLive" data-ev="${e.id}">🔗 ${e.live?'Ergebnis-Link ändern':'Ergebnis-Link'}</button>`:''}<button class="btn ghost" data-act="ics" data-ev="${e.id}">📅 In Kalender</button><button class="btn ghost" data-act="msgEv" data-ev="${e.id}">📣 Benachrichtigen</button>${e.type==='heim'||e.type==='training'?`<button class="btn blue" data-act="evKasse" data-ev="${e.id}">Getränke erfassen</button>`:''}</div>`;
   if(open){
     const L=(arr,r)=>arr.length?arr.map(x=>`<li>${esc(x.m.name)}${r&&x.r&&x.r.reason?` <span class="r">(${esc(x.r.reason)})</span>`:''}</li>`).join(''):'<li class="r">niemand</li>';
     h+=`<div class="evdetail">${e.note?`<p class="small" style="white-space:pre-wrap;margin-top:0">${esc(e.note)}</p>`:''}
@@ -1151,6 +1174,79 @@ function vMailAdmin(){const c=mailCfg();const rec=activeMembers().filter(m=>m.ma
     ${ck('token','Mich 14, 7, 3 und 1 Tag vor Ablauf des Tokens erinnern')}
     <div class="row" style="margin-top:12px"><button class="btn">Speichern</button></div></form>`}
 
+function vAdminSettings(){
+  const s=D.settings;
+  let fileBox;
+  if(FS_OK){
+    fileBox=`<p>${fh?`Alle Änderungen werden automatisch in <b>${esc(fhName)}</b> gespeichert.`:fhPending?`Zuletzt verbunden mit <b>${esc(fhPending.name)}</b>. Der Browser braucht nach dem Neustart einmal deine Erlaubnis.`:'Noch keine Datendatei verbunden. Die Daten liegen bisher nur in diesem Browser.'}</p>
+      <div class="row">${fhPending?'<button class="btn primary" data-act="fileReconnect">Mit Datei weiterarbeiten</button>':''}
+      <button class="btn ${fh||fhPending?'':'primary'}" data-act="fileNew">Neue Datendatei anlegen</button>
+      <button class="btn" data-act="fileOpen">Vorhandene Datendatei öffnen</button>
+      ${fh?'<button class="btn ghost" data-act="fileDisconnect">Verbindung trennen</button>':''}</div>`;
+  }else{
+    fileBox=`<p>Dieser Browser kann nicht direkt in eine Datei schreiben (das geht in Chrome und Edge). Die Daten werden im Browser gespeichert. Sichere sie regelmäßig mit „Exportieren“ in deinen Ordner und lade sie auf einem anderen Rechner mit „Importieren“.</p>`;
+  }
+  return `<h2 style="margin-top:26px">Vereinseinstellungen</h2>
+  <div class="panel"><h3 style="margin-bottom:8px">Speicherort</h3>${fileBox}
+    <div class="row" style="margin-top:12px"><button class="btn" data-act="exp">Exportieren (Sicherungskopie)</button><button class="btn" data-act="imp">Importieren bzw. Stand laden</button></div>
+    <p class="muted small">Für einen anderen Rechner: Kopiere den Ordner mit dieser HTML-Datei, der Datendatei und ggf. logo.png. Dort die HTML-Datei öffnen und „Vorhandene Datendatei öffnen“ wählen.</p></div>
+  <div class="panel"><h3 style="margin-bottom:10px">Preise</h3><div class="tablewrap"><table><thead><tr><th>Getränk</th><th>Verkaufspreis (€)</th><th>Davon ans Fanprojekt, wenn es dessen Flasche ist (€)</th></tr></thead><tbody>
+    ${CATS.map(c=>`<tr><td>${c.i} ${c.n}</td><td><input type="text" inputmode="decimal" data-change="set" data-path="prices.${c.k}" value="${String(s.prices[c.k]).replace('.',',')}" style="width:110px"></td><td><input type="text" inputmode="decimal" data-change="set" data-path="fp.${c.k}" value="${String(s.fp[c.k]).replace('.',',')}" style="width:110px"></td></tr>`).join('')}</tbody></table></div>
+    <p class="muted small">Preisänderungen gelten für neue Buchungen. Bereits gebuchte Getränke behalten ihren Preis.</p></div>
+  <div class="panel"><div class="grid2"><label class="f">Vereinsname<input type="text" data-change="set" data-path="club" value="${esc(s.club)}"></label>
+    <label class="f">Startbestand der Kasse (€)<input type="text" inputmode="decimal" data-change="set" data-path="startKasse" value="${String(s.startKasse).replace('.',',')}"></label>
+    <label class="f">Pfand je Kasten, leer (€)<input type="text" inputmode="decimal" data-change="set" data-path="pfandKasten" value="${String(s.pfandKasten).replace('.',',')}"></label>
+    <label class="f">Pfand je Flasche (€)<input type="text" inputmode="decimal" data-change="set" data-path="pfandFlasche" value="${String(s.pfandFlasche).replace('.',',')}"></label>
+    <label class="f">Startbestand Mannschaftskasse (€)<input type="text" inputmode="decimal" data-change="set" data-path="teamStart" value="${String(s.teamStart||0).replace('.',',')}"></label>
+    <label class="f">Spieler: ab hier orange (knapp)<input type="text" inputmode="numeric" data-change="set" data-path="playersMin" value="${s.playersMin||6}"></label>
+    <label class="f">Spieler: ab hier grün (vollständig)<input type="text" inputmode="numeric" data-change="set" data-path="playersOk" value="${s.playersOk||8}"></label>
+    <label class="f">Bestandswarnung ab (Flaschen)<input type="text" inputmode="numeric" data-change="set" data-path="lowStock" value="${s.lowStock||10}"></label>
+    <label class="f">Vereins-E-Mail (Absender)<input type="email" data-change="setTxt" data-path="clubMail" value="${esc(s.clubMail||'')}" placeholder="z. B. rot-blau@gmx.de"></label></div></div>
+  <div class="panel"><h3 style="margin-bottom:4px">Stammspieler</h3><p class="muted small" style="margin-top:0">Ein Name pro Zeile. Sie erscheinen am Spieltag als Schnellauswahl.</p>
+    <textarea data-change="roster">${esc(s.roster.join('\n'))}</textarea></div>
+  <div class="panel"><h3 style="margin-bottom:8px">Logo</h3><p class="muted small" style="margin-top:0">Lege das Vereinslogo als <b>logo.png</b> in denselben Ordner wie diese Datei, oder lade es hier hoch. Hochgeladene Logos werden in der Datendatei mitgespeichert.</p>
+    <div class="row"><button class="btn" data-act="logoUp">Logo hochladen</button>${D.logo?'<button class="btn ghost" data-act="logoDel">Hochgeladenes Logo entfernen</button>':''}</div></div>
+  <div class="panel"><h3 style="margin-bottom:8px">Alles zurücksetzen</h3><p class="muted small" style="margin-top:0">Löscht alle Spieltage, Einkäufe und Buchungen. Exportiere vorher eine Sicherungskopie.</p>
+    <button class="btn danger" data-act="reset">Alle Daten löschen</button></div>`;
+}
+/* --- Öffentliche Startseite bearbeiten und veröffentlichen --- */
+function setPub(patch){D.pub=touch(Object.assign({},pubEdit(),patch));save();render()}
+function vPubAdmin(){const P=pubEdit();const t=P.training||{};const pend=!D.pub?false:(D.pub.u||0)>(D.pub.pubAt||0);
+  return`<div class="panel"><h3 style="margin-bottom:6px">Öffentliche Startseite</h3><p class="small" style="margin-top:0">Das sehen alle, die die App ohne Token öffnen. Änderungen werden erst sichtbar, wenn du unten auf „Veröffentlichen“ tippst.</p>
+  <form data-form="pubBase"><div class="grid2">
+    <label class="f">Trainingstag<input type="text" name="day" value="${esc(t.day||'')}"></label>
+    <label class="f">Trainingsbeginn<input type="text" name="time" value="${esc(t.time||'')}" placeholder="18:45"></label>
+    <label class="f">Kontakt-E-Mail<input type="email" name="mail" value="${esc(P.mail||'')}"></label>
+    <label class="f">Spielort<input type="text" name="pname" value="${esc(P.place&&P.place.name||'')}"></label>
+    <label class="f">Adresse<input type="text" name="addr" value="${esc(P.place&&P.place.addr||'')}" placeholder="Wiesenstraße …, 42105 Wuppertal"></label>
+    <label class="f">Google-Maps-Link<input type="url" name="maps" value="${esc(P.place&&P.place.maps||'')}" placeholder="https://maps.app.goo.gl/…"></label>
+    <label class="f">Instagram-Profil (Link)<input type="url" name="insta" value="${esc(P.insta||'')}" placeholder="https://www.instagram.com/…"></label></div>
+    <label class="f" style="margin-top:12px">Text zum Training<textarea name="ttext" style="min-height:60px">${esc(t.text||'')}</textarea></label>
+    <label class="f" style="margin-top:12px">Instagram-Beiträge, die angezeigt werden (bis zu 3 Links, einer pro Zeile)<textarea name="posts" style="min-height:70px" placeholder="https://www.instagram.com/p/…">${esc((P.instaPosts||[]).join('\n'))}</textarea></label>
+    <div class="row" style="margin-top:12px"><button class="btn">Speichern</button></div></form>
+  <h4 style="margin:20px 0 6px">Neuigkeiten</h4>
+  ${(P.news||[]).length?`<div class="tablewrap"><table><tbody>${[...P.news].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(n=>`<tr><td>${esc(fmtDate(n.date))}</td><td><b>${esc(n.title)}</b></td><td class="r"><button class="x" data-act="pubNewsDel" data-id="${n.id}" title="Löschen">×</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted small">Noch keine Neuigkeiten.</p>'}
+  <form data-form="pubNews"><div class="grid2"><label class="f">Titel<input type="text" name="title" required></label><label class="f">Datum<input type="date" name="date" value="${todayStr()}"></label><label class="f">Link (optional)<input type="url" name="link" placeholder="https://…"></label></div>
+    <label class="f" style="margin-top:10px">Text<textarea name="text" style="min-height:70px"></textarea></label><div class="row" style="margin-top:10px"><button class="btn">Neuigkeit hinzufügen</button></div></form>
+  <h4 style="margin:20px 0 6px">Sponsoren</h4>
+  <div class="sponsors" style="margin-bottom:10px">${(P.sponsors||[]).map(sp=>`<div class="sp" style="position:relative">${sp.logo?`<img src="${esc(sp.logo)}" alt="">`:`<span>${esc(sp.name)}</span>`}<button class="x" style="position:absolute;top:2px;right:2px" data-act="pubSpDel" data-id="${sp.id}" title="Entfernen">×</button><button class="btn ghost" style="position:absolute;bottom:4px;left:4px;padding:2px 6px;font-size:.75rem" data-act="pubSpLogo" data-id="${sp.id}">Logo</button></div>`).join('')}</div>
+  <form data-form="pubSp" class="row"><label class="f">Name<input type="text" name="n" required></label><label class="f">Webseite<input type="url" name="u" placeholder="https://…"></label><button class="btn">Sponsor hinzufügen</button></form>
+  <h4 style="margin:20px 0 6px">Veröffentlichen</h4>
+  <p class="small" style="margin-top:0">${D.pub&&D.pub.pubAt?'Zuletzt veröffentlicht: '+fmtTs(D.pub.pubAt)+'. ':'Noch nicht veröffentlicht. '}${pend?'<b style="color:var(--rot)">Es gibt unveröffentlichte Änderungen.</b>':''}</p>
+  <form data-form="pubGo" class="row"><label class="f">Veröffentlichungs-Token${SY.pubToken?' (hinterlegt ✓)':''}<input type="password" name="t" placeholder="${SY.pubToken?'nur zum Ändern':'github_pat_…'}" autocomplete="off"></label>
+    <label class="f">App-Repository<input type="text" name="r" value="${esc(SY.pubRepo||'Rot-Blau-Dartkasse')}" autocapitalize="off" spellcheck="false"></label><button class="btn primary">Veröffentlichen</button></form>
+  <p class="muted small">Der Veröffentlichungs-Token ist ein zweiter GitHub-Token, der nur das App-Repository beschreiben darf. Er bleibt ausschließlich auf diesem Gerät.</p></div>`}
+let pubLogoTarget=null;
+async function publishPublic(){
+  const P=pubEdit();const body=JSON.stringify({training:P.training,place:P.place,mail:P.mail,insta:P.insta,instaPosts:P.instaPosts,news:P.news,sponsors:P.sponsors,updated:Date.now()},null,1);
+  const url=`https://api.github.com/repos/${encodeURIComponent(SY.owner)}/${encodeURIComponent(SY.pubRepo||'Rot-Blau-Dartkasse')}/contents/public.json`;
+  const H={'Authorization':'Bearer '+SY.pubToken,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
+  let sha;const g=await fetch(url+'?t='+Date.now(),{headers:H,cache:'no-store'});if(g.ok)sha=(await g.json()).sha;else if(g.status!==404)throw new Error(ghErr(g.status));
+  const r=await fetch(url,{method:'PUT',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({message:'Öffentliche Startseite aktualisiert',content:b64e(body),...(sha?{sha}:{})})});
+  if(!r.ok)throw new Error(ghErr(r.status));
+  D.pub=Object.assign({},pubEdit(),{u:D.pub&&D.pub.u||Date.now(),pubAt:Date.now()});save();
+}
+
 /* --- Verwaltung --- */
 async function pwHash(pw,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
   const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:150000,hash:'SHA-256'},k,256);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -1176,6 +1272,8 @@ function vAdmin(){
     <li>Weil alle denselben Token nutzen, könnte sich die Person technisch mit einem anderen Namen neu anmelden. Für einen sicheren Ausschluss erzeugst du bei GitHub mit <b>Regenerate token</b> einen neuen Token und schickst ihn nur an die verbleibenden Mitglieder.</li>
     <li>Das neue Ablaufdatum oben eintragen.</li></ol></div>
   ${vMailAdmin()}
+  ${vPubAdmin()}
+  ${vAdminSettings()}
   <form class="panel" data-form="admPw2" style="max-width:480px"><h3 style="margin-bottom:8px">Admin-Passwort ändern</h3><label class="f">Neues Passwort<input type="password" name="a" minlength="6" required autocomplete="new-password"></label><div class="row" style="margin-top:12px"><button class="btn">Ändern</button></div></form>`;
 }
 
@@ -1225,7 +1323,7 @@ Object.assign(act,{
 });
 Object.assign(forms,{
   newMe:f=>{setMe(createMember(f.elements.n.value))},
-  ev:f=>{const F=f.elements;const type=F.type.value;const base={type,title:F.title.value.trim()||ET[type],date:F.date.value||todayStr(),time:F.time.value,place:F.place.value.trim(),meet:F.meet.value.trim(),note:F.note.value.trim()};
+  ev:f=>{const F=f.elements;const type=F.type.value;const lv=F.live.value.trim();if(lv&&!safeUrl(lv)){toast('Ergebnis-Link bitte mit https:// angeben.');return}const base={type,title:F.title.value.trim()||ET[type],date:F.date.value||todayStr(),time:F.time.value,place:F.place.value.trim(),meet:F.meet.value.trim(),note:F.note.value.trim(),live:lv};
     if(ui.evForm==='new'){const n=Math.max(1,+(F.rep?F.rep.value:1)||1);
       for(let i=0;i<n;i++){const d=new Date(base.date+'T12:00');d.setDate(d.getDate()+7*i);const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
         D.events.push(touch({id:uid(),...base,date:ds,created:Date.now(),by:SY.me}))}
@@ -1327,7 +1425,9 @@ function vStart(){
   if(m&&!m.email&&!m.phone)W.push({ic:'📇',t:'Hinterlege deine Kontaktdaten, damit dich die anderen erreichen.',b:`<button class="btn ghost" data-act="tab" data-tab="einstellungen">Profil</button>`});
   const free=T.cash-T.fpDue-T.owed;const posts=[...D.posts].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.created-a.created).slice(0,2);
   const d=new Date();
-  let h=`<div class="hero"><div class="hl">${bigLogo()}</div><div><h2>Hallo ${esc(m?m.name:'')}!</h2><p>${d.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}. ${next.length?`In den nächsten 14 Tagen ${next.length===1?'steht 1 Termin':'stehen '+next.length+' Termine'} an.`:'In den nächsten 14 Tagen steht nichts an.'}</p></div></div>
+  const yd=new Date();yd.setDate(yd.getDate()-1);const ydS=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+  const lives=D.events.filter(e=>safeUrl(e.live)&&e.date>=ydS&&e.date<=limS).sort((a,b)=>evKey(a).localeCompare(evKey(b)));
+  let h=lives.map(e=>`<a class="liveres" href="${esc(safeUrl(e.live))}" target="_blank" rel="noopener"><span style="font-size:1.4rem;flex:none">📊</span><span><b>Live-Ergebnisse: ${esc(ET[e.type])} ${esc(e.title)}</b>${esc(fmtDate(e.date))}${e.time?', '+e.time+' Uhr':''}</span><span class="go">Öffnen</span></a>`).join('')+`<div class="hero"><div class="hl">${bigLogo()}</div><div><h2>Hallo ${esc(m?m.name:'')}!</h2><p>${d.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}. ${next.length?`In den nächsten 14 Tagen ${next.length===1?'steht 1 Termin':'stehen '+next.length+' Termine'} an.`:'In den nächsten 14 Tagen steht nichts an.'}</p></div></div>
   <div class="dgrid"><div>
     ${W.length?`<div class="panel"><h3 style="margin-bottom:4px">Hinweise</h3>${W.map(w=>`<div class="warn ${w.hi?'hi':''}"><span class="ic">${w.ic}</span><span class="tx">${w.t}</span>${w.b||''}</div>`).join('')}</div>`:`<div class="panel"><h3 style="margin-bottom:4px">Hinweise</h3><p class="muted" style="margin:6px 0 0">Alles erledigt. Keine offenen Punkte.</p></div>`}
     <div class="panel"><div class="row" style="justify-content:space-between;margin-bottom:4px"><h3>Die nächsten 14 Tage</h3><button class="btn ghost" data-act="tab" data-tab="termine">Alle Termine</button></div>
@@ -1347,6 +1447,12 @@ function vStart(){
   return h}
 
 Object.assign(act,{
+  instaLoad:()=>{instaOn=true;render();if(!document.getElementById('igjs')){const sc=document.createElement('script');sc.id='igjs';sc.async=true;sc.src='https://www.instagram.com/embed.js';sc.onload=()=>window.instgrm&&window.instgrm.Embeds.process();document.body.appendChild(sc)}else if(window.instgrm)window.instgrm.Embeds.process()},
+  pubNewsDel:el=>{if(!confirm('Neuigkeit löschen?'))return;const P=pubEdit();setPub({news:(P.news||[]).filter(n=>n.id!==el.dataset.id)})},
+  pubSpDel:el=>{if(!confirm('Sponsor entfernen?'))return;const P=pubEdit();setPub({sponsors:(P.sponsors||[]).filter(x=>x.id!==el.dataset.id)})},
+  pubSpLogo:el=>{pubLogoTarget=el.dataset.id;document.getElementById('spLogoFile').click()},
+  evLive:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);if(!e)return;const v=prompt('Link zu den Live-Ergebnissen (leer lassen zum Entfernen):',e.live||'');if(v===null)return;
+    const u=v.trim();if(u&&!safeUrl(u)){toast('Bitte einen vollständigen Link mit https:// eingeben.');return}e.live=u;touch(e);save();render();toast(u?'Ergebnis-Link gespeichert':'Ergebnis-Link entfernt')},
   kv:el=>{ui.kv=el.dataset.k;render()},
   goEv:el=>{ui.tab='termine';ui.openEv=el.dataset.ev;render();setTimeout(()=>{const a=document.querySelector(`[data-act=evOpen][data-ev="${el.dataset.ev}"]`);if(a)a.closest('.ev').scrollIntoView({behavior:'smooth',block:'start'})},50)},
   msgEv:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);if(!e)return;const ms=activeMembers();
@@ -1359,6 +1465,16 @@ Object.assign(act,{
 // Löschen einer Umbuchung in der Getränkekasse entfernt auch die Gegenbuchung
 const _delMove=act.delMove;act.delMove=el=>{const mv=D.moves.find(m=>m.id===el.dataset.id);if(mv&&mv.type==='trans'){if(!confirm('Umbuchung auf beiden Seiten löschen?'))return;const tw=D.team.find(x=>x.link===mv.id);tomb(mv.id);D.moves=D.moves.filter(m=>m!==mv);if(tw){tomb(tw.id);D.team=D.team.filter(x=>x!==tw)}save();render();return}_delMove(el)};
 Object.assign(forms,{
+  pubBase:f=>{const F=f.elements;const u=F.insta.value.trim();if(u&&!safeUrl(u)){toast('Instagram-Link bitte mit https:// angeben.');return}
+    const posts=F.posts.value.split(/\s+/).map(x=>x.trim()).filter(Boolean);if(posts.some(x=>!safeUrl(x))){toast('Instagram-Beiträge bitte als vollständige Links angeben.');return}
+    setPub({training:{day:F.day.value.trim(),time:F.time.value.trim(),text:F.ttext.value.trim()},mail:F.mail.value.trim(),place:{name:F.pname.value.trim(),addr:F.addr.value.trim(),maps:safeUrl(F.maps.value)},insta:u,instaPosts:posts.slice(0,3)});toast('Gespeichert. Zum Anzeigen noch veröffentlichen.')},
+  pubNews:f=>{const F=f.elements;if(!F.title.value.trim())return;const l=F.link.value.trim();if(l&&!safeUrl(l)){toast('Link bitte mit https:// angeben.');return}
+    const P=pubEdit();setPub({news:[...(P.news||[]),{id:uid(),title:F.title.value.trim(),date:F.date.value||todayStr(),text:F.text.value.trim(),link:l}]});toast('Neuigkeit hinzugefügt. Zum Anzeigen noch veröffentlichen.')},
+  pubSp:f=>{const F=f.elements;const u=F.u.value.trim();if(u&&!safeUrl(u)){toast('Webseite bitte mit https:// angeben.');return}const P=pubEdit();setPub({sponsors:[...(P.sponsors||[]),{id:uid(),name:F.n.value.trim(),url:u,logo:''}]})},
+  pubGo:async f=>{const F=f.elements;if(F.t.value.trim())SY.pubToken=F.t.value.trim();SY.pubRepo=F.r.value.trim()||'Rot-Blau-Dartkasse';saveSyncCfg();
+    if(!SY.pubToken){toast('Bitte den Veröffentlichungs-Token eintragen.');return}
+    const b=f.querySelector('button');b.disabled=true;b.textContent='Wird veröffentlicht …';
+    try{await publishPublic();PUB=null;render();toast('Veröffentlicht. Nach etwa einer Minute ist die Startseite aktualisiert.')}catch(e){b.disabled=false;b.textContent='Veröffentlichen';toast('Veröffentlichen fehlgeschlagen: '+(e.message||e))}},
   profile:f=>{const m=me();if(!m)return;const F=f.elements;const em=F.email.value.trim();if(em&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Bitte eine gültige E-Mail-Adresse eingeben.');return}
     m.email=em;m.phone=F.phone.value.trim();m.mailOk=F.mailOk.checked&&!!em;touch(m);save();render();toast('Kontaktdaten gespeichert')},
   team:f=>{const F=f.elements;const a=Math.abs(num(F.amt.value));if(!a){toast('Bitte einen Betrag eingeben.');return}if(!F.note.value.trim()){toast('Bitte kurz angeben, wer oder wofür.');return}
@@ -1368,10 +1484,13 @@ Object.assign(forms,{
     D.team.push({id:uid(),ts:Date.now(),date:todayStr(),cat:'trans',amt:into?a:-a,note:into?'aus der Getränkekasse':'in die Getränkekasse',link:mid,by:SY.me});save();render();toast('Umgebucht')}
 });
 
+document.getElementById('spLogoFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f||!pubLogoTarget)return;
+  const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const m=360,sc=Math.min(1,m/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);const P=pubEdit();setPub({sponsors:(P.sponsors||[]).map(x=>x.id===pubLogoTarget?{...x,logo:c.toDataURL('image/png')}:x)});toast('Logo übernommen')};img.src=r.result};r.readAsDataURL(f)});
 /* ===================== Start ===================== */
 (async function init(){
   try{const raw=localStorage.getItem(LS_KEY);if(raw)D=normalize(JSON.parse(raw))}catch(e){}
-  renderHeader();render();status();
+  renderHeader();render();status();loadPublic();
   if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   if(syncOn())syncNow();

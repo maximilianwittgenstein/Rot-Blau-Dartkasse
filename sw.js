@@ -1,6 +1,6 @@
 // Offline-Unterstützung: erst Netz (für Updates), sonst Zwischenspeicher.
-const CACHE = 'dartkasse-v12';
-const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo.png', './logo-full.png'];
+const CACHE = 'dartkasse-v14';
+const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo.png', './logo-full.png', './sponsor-eskeshof.png', './sponsor-katzengold.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
 });
