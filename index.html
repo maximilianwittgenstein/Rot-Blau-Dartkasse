@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0E1C38">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dartkasse">
+<title>Getränkekasse – DC Rot-Blau Wuppertal</title>
+<style>
+:root{
+  --rot:#C8102E; --rot-d:#A00D25; --blau:#0B3C8C; --blau-hell:#1F5BD6; --nacht:#0E1C38;
+  --bg:#EEF1F6; --card:#FFFFFF; --ink:#14213D; --muted:#5B6782; --line:#D8DEEA;
+  --fp:#B7791F; --fp-bg:#FBF1DE; --ok:#1E7F4F; --ok-bg:#E3F4EA; --warn-bg:#FDE8EB;
+  --font: Bahnschrift, "DIN Alternate", "DIN Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0A1325; --card:#132039; --ink:#E8EDF7; --muted:#9AA7C2; --line:#253658;
+    --fp-bg:#3A2C12; --ok-bg:#12382A; --warn-bg:#3d1520; --blau:#2A63C9; color-scheme: dark; }
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #4C8DFF;outline-offset:2px}
+
+/* Kopf */
+header.top{background:var(--nacht);color:#fff;position:sticky;top:0;z-index:10}
+.top-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:18px;padding:10px 20px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand .logo{width:54px;height:54px;border-radius:50%;background:#fff;display:grid;place-items:center;overflow:hidden;flex:none}
+.brand .logo img{width:100%;height:100%;object-fit:contain}
+.brand h1{font-size:1.3rem;margin:0;font-weight:700;letter-spacing:.01em;line-height:1.1}
+.brand p{margin:2px 0 0;font-size:.85rem;opacity:.7}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap}
+nav.tabs button{background:transparent;border:0;color:#fff;padding:9px 14px;border-radius:999px;cursor:pointer;font-weight:600;opacity:.8}
+nav.tabs button:hover{opacity:1;background:rgba(255,255,255,.08)}
+nav.tabs button.on{background:#fff;color:var(--nacht);opacity:1}
+.filechip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:7px 12px;cursor:pointer;font-size:.85rem;max-width:280px}
+.filechip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;background:#F2B233}
+.dot.ok{background:#3DD68C}.dot.err{background:#FF5470}
+.ring{height:8px;background:repeating-linear-gradient(90deg,var(--rot) 0 30px,var(--blau-hell) 30px 60px)}
+
+main{max-width:1280px;margin:0 auto;padding:22px 20px 60px}
+h2{font-size:1.45rem;margin:0 0 14px}
+h3{font-size:1.1rem;margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:600;line-height:1.2}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--rot);border-color:var(--rot);color:#fff}
+.btn.primary:hover{background:var(--rot-d)}
+.btn.blue{background:var(--blau);border-color:var(--blau);color:#fff}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--rot);border-color:transparent;background:transparent}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+input[type=text],input[type=number],input[type=date],input[type=datetime-local],select,textarea{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0}
+textarea{width:100%;min-height:140px;resize:vertical}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted);font-weight:600}
+label.f > *{color:var(--ink);font-weight:400;font-size:1rem}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:18px}
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);font-size:1.2rem;margin-bottom:6px}
+
+/* Spieltag */
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;border-radius:18px;overflow:hidden;margin-bottom:16px;min-height:96px}
+.vs .side{padding:16px 22px;color:#fff;display:flex;flex-direction:column;justify-content:center}
+.vs .home{background:var(--rot)}
+.vs .away{background:var(--blau);text-align:right}
+.vs .side b{font-size:clamp(1.15rem,2.6vw,1.8rem);line-height:1.1}
+.vs .side small{opacity:.85}
+.vs .mid{background:var(--nacht);color:#fff;display:grid;place-items:center;padding:0 18px;font-weight:700;font-size:1.1rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat .k{font-size:.85rem;color:var(--muted)}
+.stat .v{font-size:1.5rem;font-weight:700}
+.split{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--line);margin-top:8px}
+.split i{display:block;height:100%}
+.split .v1{background:var(--blau)} .split .v2{background:var(--fp)}
+.legend{display:flex;gap:12px;font-size:.8rem;color:var(--muted);margin-top:4px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:middle}
+
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:980px){.teams{grid-template-columns:1fr}}
+.team{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;border-top:6px solid var(--rot)}
+.team.gast{border-top-color:var(--blau)}
+.team > header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}
+.addp{display:flex;gap:8px;margin-bottom:10px}
+.addp input{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{border:1px dashed var(--muted);background:transparent;border-radius:999px;padding:4px 11px;cursor:pointer;font-size:.88rem}
+.chip:hover{border-style:solid}
+.chip.all{border-style:solid;font-weight:600}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:12px}
+.person{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--bg)}
+.person.paid{border-color:var(--ok);background:var(--ok-bg)}
+.person.part{border-color:var(--fp)}
+.person .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.person .ph strong{font-size:1.08rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1;padding:2px 6px;border-radius:6px}
+.x:hover{color:var(--rot)}
+.cnt{display:grid;grid-template-columns:1fr 40px 34px 40px;align-items:center;gap:6px;margin-bottom:6px}
+.cnt span{font-size:.95rem}
+.cnt b{text-align:center;font-size:1.15rem}
+.cnt button{height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:1.3rem;font-weight:700;line-height:1}
+.cnt button.plus{background:var(--blau);border-color:var(--blau);color:#fff}
+.cnt button:disabled{opacity:.35;cursor:default}
+.pf{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px}
+.pf .sum{font-size:1.25rem;font-weight:700}
+.pay{border-radius:10px;padding:8px 12px;border:0;cursor:pointer;font-weight:700;background:var(--rot);color:#fff}
+.pay.done{background:var(--ok)}
+.pay.rest{background:var(--fp)}
+.pay:disabled{background:var(--line);color:var(--muted);cursor:default}
+.note{font-size:.8rem;color:var(--muted);margin-top:4px}
+
+/* Tabellen & Kennzahlen */
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:.82rem;color:var(--muted);font-weight:600}
+td.r,th.r{text-align:right}
+.tablewrap{overflow-x:auto}
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px}
+.fig{border-radius:16px;padding:16px 18px;background:var(--card);border:1px solid var(--line)}
+.fig .k{color:var(--muted);font-size:.9rem}
+.fig .v{font-size:2rem;font-weight:700;line-height:1.15;margin-top:2px}
+.fig.cash{background:var(--nacht);color:#fff;border-color:var(--nacht)}
+.fig.cash .k{color:rgba(255,255,255,.7)}
+.fig.fp{background:var(--fp-bg);border-color:var(--fp)}
+.stock{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+@media (max-width:640px){.stock{grid-template-columns:1fr}}
+.stock .fig .v{color:var(--blau)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
+.tag{display:inline-block;font-size:.78rem;padding:2px 8px;border-radius:999px;background:var(--line)}
+.tag.fp{background:var(--fp-bg);color:var(--fp)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--nacht);color:#fff;padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+@media (max-width:700px){
+  .top-inner{padding:8px 12px;gap:8px}
+  .brand .logo{width:42px;height:42px}
+  .brand h1{font-size:1.02rem}
+  .brand p{display:none}
+  nav.tabs{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  nav.tabs button{white-space:nowrap;padding:8px 12px}
+  .filechip{max-width:150px;padding:6px 10px}
+  main{padding:14px 12px 70px}
+  .vs{min-height:80px}.vs .side{padding:10px 12px}.vs .mid{padding:0 8px}
+  .people{grid-template-columns:1fr}
+  .team{padding:12px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat .v{font-size:1.25rem}
+}
+dialog{border:0;border-radius:16px;padding:20px;max-width:440px;width:calc(100% - 32px);background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(14,28,56,.55)}
+dialog h3{margin-bottom:8px}
+dialog .row{margin-top:14px}
+/* Druck */
+#print{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  body > *:not(#print){display:none !important}
+  #print{display:block;font-family:var(--font);color:#000}
+  #print h1{font-size:20px;margin:0}
+  #print h2{font-size:15px;margin:18px 0 6px}
+  #print table{font-size:13px}
+  #print th,#print td{border-bottom:1px solid #bbb;padding:5px 6px}
+  #print .phead{display:flex;align-items:center;gap:12px;border-bottom:4px solid #C8102E;padding-bottom:8px;margin-bottom:10px}
+  #print .phead img,#print .phead svg{width:56px;height:56px}
+  #print .tot{font-weight:700}
+}
+</style>
+</head>
+<body>
+
+<template id="fallbackLogo">
+  <svg viewBox="0 0 100 100" width="100%" height="100%" aria-label="Vereinsemblem">
+    <circle cx="50" cy="50" r="48" fill="#0E1C38"/>
+    <circle cx="50" cy="50" r="38" fill="none" stroke="#1F5BD6" stroke-width="12"/>
+    <circle cx="50" cy="50" r="38" fill="none" stroke="#C8102E" stroke-width="12" stroke-dasharray="11.94 11.94"/>
+    <circle cx="50" cy="50" r="27" fill="#fff"/>
+    <text x="50" y="58" text-anchor="middle" font-family="Bahnschrift, Arial, sans-serif" font-weight="700" font-size="22" fill="#0E1C38">RB</text>
+  </svg>
+</template>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="logo" id="logoBox"></div>
+      <div><h1 id="clubName">DC Rot-Blau Wuppertal</h1><p>Getränkekasse</p></div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-act="tab" data-tab="spieltag">Spieltag</button>
+      <button data-act="tab" data-tab="bestand">Bestand &amp; Einkauf</button>
+      <button data-act="tab" data-tab="kasse">Kasse</button>
+      <button data-act="tab" data-tab="einstellungen">Einstellungen</button>
+    </nav>
+    <button class="filechip" data-act="share" title="Aktuellen Stand per WhatsApp & Co. teilen"><span>Stand teilen</span></button>
+    <button class="filechip" id="fileChip" data-act="tab" data-tab="einstellungen" title="Speicherort"><i class="dot" id="fileDot"></i><span id="fileText">…</span></button>
+  </div>
+  <div class="ring"></div>
+</header>
+
+<main id="app"></main>
+<div id="print"></div>
+<div class="toast" id="toast"></div>
+<dialog id="impDlg"><h3>Stand laden</h3><p id="impInfo" class="small"></p>
+  <p class="muted small"><b>Zusammenführen</b> ergänzt alles, was im geladenen Stand neu ist, und übernimmt dort gelöschte Einträge. Deine eigenen Einträge bleiben erhalten. <b>Ersetzen</b> verwirft deinen bisherigen Stand.</p>
+  <div class="row"><button class="btn primary" data-imp="merge">Zusammenführen</button><button class="btn" data-imp="replace">Ersetzen</button><button class="btn ghost" data-imp="cancel">Abbrechen</button></div></dialog>
+<input type="file" id="impFile" accept=".json,.txt,application/json,text/plain" hidden>
+<input type="file" id="logoFile" accept="image/*" hidden>
+
+<script>
+/* ===================== Grundlagen ===================== */
+const CATS=[{k:'bier',n:'Bier',i:'🍺'},{k:'wasser',n:'Wasser',i:'💧'},{k:'soft',n:'Softdrink',i:'🥤'}];
+const CATN=Object.fromEntries(CATS.map(c=>[c.k,c.n]));
+const LS_KEY='dartkasse-rotblau-v1';
+const FS_OK=('showOpenFilePicker' in window)&&('showSaveFilePicker' in window);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const eur=n=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(Math.round((n||0)*100)/100);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>{const n=parseFloat(String(v??'').replace(/\s/g,'').replace(',','.'));return isFinite(n)?n:0};
+const fmtDate=d=>{if(!d)return'';const [y,m,dd]=d.split('-');return new Date(+y,m-1,+dd).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})};
+const fmtTs=t=>new Date(t).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const nowLocal=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)};
+
+function blank(){return{app:'dartkasse',version:1,savedAt:null,
+  settings:{club:'DC Rot-Blau Wuppertal',prices:{bier:2,wasser:1.5,soft:1.5},fp:{bier:2,wasser:1.5,soft:1.5},startKasse:0,roster:[]},
+  logo:null,batches:[],matchdays:[],sales:[],moves:[],deleted:[]}}
+function normalize(d){const b=blank();d=d||{};
+  const s=Object.assign({},b.settings,d.settings||{});
+  s.prices=Object.assign({},b.settings.prices,(d.settings||{}).prices||{});
+  s.fp=Object.assign({},b.settings.fp,(d.settings||{}).fp||{});
+  s.roster=Array.isArray(s.roster)?s.roster:[];
+  return{...b,...d,app:'dartkasse',settings:s,batches:d.batches||[],matchdays:d.matchdays||[],sales:d.sales||[],moves:d.moves||[],deleted:d.deleted||[]}}
+const hasData=d=>d&&(d.matchdays.length||d.batches.length||d.sales.length||d.moves.length);
+
+let D=blank();
+let ui={tab:'spieltag',md:null,showNewMd:false,focus:null};
+
+/* ===================== Berechnung (FIFO) ===================== */
+// Vereinsflaschen werden zuerst verkauft (ältester Einkauf zuerst).
+// Ein Einkauf gilt nur für Verkäufe, die nach seinem Zeitpunkt gebucht wurden.
+function compute(){
+  const rem={},cpu={};
+  D.batches.forEach(b=>{rem[b.id]=b.qty;cpu[b.id]=b.qty?b.cost/b.qty:0});
+  const byCat={};CATS.forEach(c=>byCat[c.k]=D.batches.filter(b=>b.cat===c.k).sort((a,b)=>a.ts-b.ts));
+  const alloc={};
+  [...D.sales].sort((a,b)=>a.ts-b.ts).forEach(s=>{
+    let q=s.qty,v=0,vc=0;
+    for(const b of byCat[s.cat]||[]){if(q<=0||b.ts>s.ts)break;const t=Math.min(q,rem[b.id]);if(t>0){rem[b.id]-=t;q-=t;v+=t;vc+=t*cpu[b.id]}}
+    alloc[s.id]={v,vc,f:q};
+  });
+  return{rem,alloc};
+}
+const salesOf=(md,p)=>D.sales.filter(s=>s.md===md.id&&s.p===p.id);
+const countOf=(md,p,cat)=>salesOf(md,p).filter(s=>s.cat===cat).reduce((a,s)=>a+s.qty,0);
+const totalOf=(md,p)=>salesOf(md,p).reduce((a,s)=>a+s.qty*s.price,0);
+function totals(){
+  const C=compute();
+  let paid=0,open=0,over=0;
+  D.matchdays.forEach(m=>m.people.forEach(p=>{const t=totalOf(m,p),pd=p.paid||0;paid+=pd;if(t>pd)open+=t-pd;else over+=pd-t}));
+  const buy=D.batches.filter(b=>b.fromKasse).reduce((a,b)=>a+b.cost,0);
+  const mv=D.moves.reduce((a,m)=>a+m.amt,0);
+  const cash=num(D.settings.startKasse)+paid-buy+mv;
+  let fpEarned=0,rev=0,cost=0;const cat={};CATS.forEach(c=>cat[c.k]={n:0,v:0,f:0,u:0});
+  D.sales.forEach(s=>{const a=C.alloc[s.id];fpEarned+=a.f*(s.fp??s.price);rev+=a.v*s.price;cost+=a.vc;
+    const c=cat[s.cat];c.n+=s.qty;c.v+=a.v;c.f+=a.f;c.u+=s.qty*s.price});
+  const fpPaid=-D.moves.filter(m=>m.type==='fp').reduce((a,m)=>a+m.amt,0);
+  const stock={};CATS.forEach(c=>stock[c.k]=D.batches.filter(b=>b.cat===c.k).reduce((a,b)=>a+C.rem[b.id],0));
+  return{C,paid,open,over,cash,fpEarned,fpPaid,fpDue:fpEarned-fpPaid,profit:rev-cost,cat,stock};
+}
+
+/* ===================== Speichern ===================== */
+let fh=null,fhName=null,fhPending=null,saveTimer=null,fileState='none',fileErr='';
+function save(){
+  D.savedAt=Date.now();
+  try{localStorage.setItem(LS_KEY,JSON.stringify(D))}catch(e){}
+  if(fh){fileState='saving';clearTimeout(saveTimer);saveTimer=setTimeout(writeFile,300)}
+  status();
+}
+async function writeFile(){
+  if(!fh)return;
+  try{const w=await fh.createWritable();await w.write(JSON.stringify(D,null,2));await w.close();fileState='ok';fileErr=''}
+  catch(e){fileState='err';fileErr=e.message||String(e)}
+  status();
+}
+function status(){
+  const dot=document.getElementById('fileDot'),t=document.getElementById('fileText');
+  dot.className='dot';
+  if(fh&&fileState==='err'){dot.classList.add('err');t.textContent='Speichern fehlgeschlagen'}
+  else if(fh){dot.classList.add('ok');t.textContent=fileState==='saving'?'Speichert …':'Gespeichert: '+fhName}
+  else if(fhPending){t.textContent='Datei erneut verbinden'}
+  else{t.textContent=FS_OK?'Nur im Browser gespeichert':'Auf diesem Gerät gespeichert'}
+}
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('dartkasse',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbSet(k,v){try{const db=await idb();await new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){}}
+async function idbGet(k){try{const db=await idb();return await new Promise((res,rej)=>{const t=db.transaction('kv');const q=t.objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}catch(e){return null}}
+async function idbDel(k){try{const db=await idb();await new Promise(res=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').delete(k);t.oncomplete=res})}catch(e){}}
+const FTYPES=[{description:'Getränkekasse-Daten',accept:{'application/json':['.json']}}];
+
+async function useHandle(h){
+  let perm=await h.queryPermission({mode:'readwrite'});
+  if(perm!=='granted')perm=await h.requestPermission({mode:'readwrite'});
+  if(perm!=='granted'){toast('Zugriff auf die Datei wurde nicht erlaubt.');return}
+  const txt=await (await h.getFile()).text();
+  let d=null;
+  if(txt.trim()){try{d=JSON.parse(txt)}catch(e){toast('Die Datei ist keine gültige Kassen-Datei.');return}
+    if(d.app!=='dartkasse'){toast('Diese Datei gehört nicht zur Getränkekasse.');return}}
+  fh=h;fhName=h.name;fhPending=null;await idbSet('fh',h);
+  if(d){
+    const localNewer=hasData(D)&&D.savedAt&&(!d.savedAt||D.savedAt>d.savedAt);
+    if(localNewer&&confirm('Die Daten in diesem Browser sind neuer als die in „'+h.name+'“.\n\nOK = Browserdaten in die Datei schreiben\nAbbrechen = Daten aus der Datei laden')){await writeFile()}
+    else{D=normalize(d);try{localStorage.setItem(LS_KEY,JSON.stringify(D))}catch(e){};fileState='ok'}
+  }else{await writeFile()}
+  renderHeader();render();status();toast('Verbunden mit '+h.name);
+}
+async function fileNew(){try{const h=await showSaveFilePicker({suggestedName:'dartkasse-daten.json',types:FTYPES});fh=h;fhName=h.name;fhPending=null;await idbSet('fh',h);await writeFile();render();toast('Datei angelegt: '+h.name)}catch(e){if(e.name!=='AbortError')toast(e.message)}}
+async function fileOpen(){try{const [h]=await showOpenFilePicker({types:FTYPES});await useHandle(h)}catch(e){if(e.name!=='AbortError')toast(e.message)}}
+async function fileReconnect(){if(fhPending){try{await useHandle(fhPending)}catch(e){toast(e.message)}}}
+async function fileDisconnect(){fh=null;fhName=null;fhPending=null;await idbDel('fh');status();render()}
+function exportJson(){
+  const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dartkasse-daten-'+todayStr()+'.json';
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+function tomb(...ids){ids.forEach(id=>{if(id&&!D.deleted.includes(id))D.deleted.push(id)})}
+function mergeData(a,b){
+  a=normalize(JSON.parse(JSON.stringify(a)));b=normalize(b);
+  const ms=new Map(a.matchdays.map(m=>[m.id,m]));
+  b.matchdays.forEach(m=>{const e=ms.get(m.id);if(!e){a.matchdays.push(m);return}
+    const ps=new Map(e.people.map(p=>[p.id,p]));
+    m.people.forEach(p=>{const ep=ps.get(p.id);if(!ep)e.people.push(p);else ep.paid=Math.max(ep.paid||0,p.paid||0)})});
+  ['sales','batches','moves'].forEach(k=>{const ids=new Set(a[k].map(x=>x.id));b[k].forEach(x=>{if(!ids.has(x.id))a[k].push(x)})});
+  const del=new Set([...a.deleted,...b.deleted]);a.deleted=[...del];
+  a.matchdays=a.matchdays.filter(m=>!del.has(m.id));a.matchdays.forEach(m=>m.people=m.people.filter(p=>!del.has(p.id)));
+  ['sales','batches','moves'].forEach(k=>a[k]=a[k].filter(x=>!del.has(x.id)));
+  if((b.savedAt||0)>(a.savedAt||0)){a.settings=b.settings;if(b.logo)a.logo=b.logo}
+  return a;
+}
+let pendingImport=null;
+function importJson(file){
+  const r=new FileReader();
+  r.onload=()=>{let d;try{d=JSON.parse(r.result);if(d.app!=='dartkasse')throw new Error()}catch(e){toast('Die Datei ist keine gültige Kassen-Datei.');return}
+    d=normalize(d);
+    if(!hasData(D)){D=d;save();renderHeader();render();toast('Stand geladen');return}
+    const known=new Set(D.matchdays.map(m=>m.id));const neu=d.matchdays.filter(m=>!known.has(m.id)).length;
+    document.getElementById('impInfo').innerHTML=`Datei <b>${esc(file.name)}</b>${d.savedAt?', Stand vom '+fmtTs(d.savedAt):''}.<br>Enthält ${d.matchdays.length} Spieltag(e), davon ${neu} neu für dieses Gerät.`;
+    pendingImport=d;document.getElementById('impDlg').showModal()};
+  r.readAsText(file);
+}
+document.getElementById('impDlg').addEventListener('click',e=>{const b=e.target.closest('[data-imp]');if(!b)return;const dlg=document.getElementById('impDlg');
+  if(b.dataset.imp==='merge'&&pendingImport){D=mergeData(D,pendingImport);save();renderHeader();render();toast('Stand zusammengeführt')}
+  else if(b.dataset.imp==='replace'&&pendingImport){D=pendingImport;save();renderHeader();render();toast('Stand ersetzt')}
+  pendingImport=null;dlg.close()});
+async function shareState(){
+  // .txt statt .json: WhatsApp & Android-Teilen akzeptieren Textdateien zuverlässig
+  const f=new File([JSON.stringify(D,null,2)],'dartkasse-stand-'+todayStr()+'.txt',{type:'text/plain'});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){
+    try{await navigator.share({files:[f],title:'Dartkasse-Stand',text:'Stand der Getränkekasse vom '+fmtTs(Date.now())+'. In der Dartkasse über „Stand laden“ öffnen.'})}
+    catch(e){if(e.name!=='AbortError')toast(e.message)}
+  }else{exportJson();toast('Datei heruntergeladen. Du kannst sie jetzt per WhatsApp verschicken.')}
+}
+
+/* ===================== Kopfbereich ===================== */
+function renderHeader(){
+  document.getElementById('clubName').textContent=D.settings.club||'DC Rot-Blau Wuppertal';
+  const box=document.getElementById('logoBox');box.innerHTML='';
+  const fb=()=>{box.innerHTML='';box.appendChild(document.getElementById('fallbackLogo').content.cloneNode(true))};
+  const img=new Image();img.alt='Vereinslogo';
+  img.onload=()=>{box.innerHTML='';box.appendChild(img)};img.onerror=fb;
+  img.src=D.logo||'logo.png';
+  document.title='Getränkekasse – '+(D.settings.club||'');
+}
+function logoMarkup(){return D.logo?`<img src="${D.logo}" alt="">`:(document.querySelector('#logoBox img')?`<img src="${document.querySelector('#logoBox img').src}" alt="">`:document.getElementById('fallbackLogo').innerHTML)}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2400)}
+
+/* ===================== Ansichten ===================== */
+function render(){
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
+  const app=document.getElementById('app');
+  app.innerHTML={spieltag:vSpieltag,bestand:vBestand,kasse:vKasse,einstellungen:vEinstellungen}[ui.tab]();
+  if(ui.focus){const el=document.getElementById(ui.focus);if(el)el.focus();ui.focus=null}
+}
+
+function vSpieltag(){
+  const mds=[...D.matchdays].sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created);
+  if(!mds.find(m=>m.id===ui.md))ui.md=mds[0]?.id||null;
+  const md=D.matchdays.find(m=>m.id===ui.md);
+  const opps=[...new Set(D.matchdays.map(m=>m.opponent))];
+  let h=`<div class="bar">`;
+  if(mds.length)h+=`<select data-change="selMd" aria-label="Spieltag wählen">${mds.map(m=>`<option value="${m.id}" ${m.id===ui.md?'selected':''}>${esc(fmtDate(m.date))} gegen ${esc(m.opponent)}</option>`).join('')}</select>`;
+  h+=`<button class="btn primary" data-act="newMd">Neuer Spieltag</button></div>`;
+  if(ui.showNewMd||!mds.length){
+    h+=`<form class="panel" data-form="newMd"><h3 style="margin-bottom:12px">Neuen Heimspieltag anlegen</h3>
+      <div class="grid2"><label class="f">Datum<input type="date" name="date" value="${todayStr()}" required></label>
+      <label class="f">Gegner (Mannschaft)<input type="text" name="opp" id="newOpp" list="oppList" placeholder="z. B. DC Heiligenhaus" required></label>
+      <div class="row"><button class="btn primary">Spieltag anlegen</button>${mds.length?'<button type="button" class="btn ghost" data-act="newMd">Abbrechen</button>':''}</div></div>
+      <datalist id="oppList">${opps.map(o=>`<option value="${esc(o)}">`).join('')}</datalist></form>`;
+  }
+  if(!md){return h+(mds.length?'':`<div class="empty"><strong>Noch kein Spieltag angelegt</strong>Lege oben den ersten Heimspieltag an. Danach trägst du die Spieler beider Mannschaften ein und buchst Getränke mit einem Tipp.</div>`)}
+
+  const C=compute();
+  const daySales=D.sales.filter(s=>s.md===md.id);
+  const umsatz=daySales.reduce((a,s)=>a+s.qty*s.price,0);
+  const bezahlt=md.people.reduce((a,p)=>a+(p.paid||0),0);
+  const offen=md.people.reduce((a,p)=>a+Math.max(0,totalOf(md,p)-(p.paid||0)),0);
+  h+=`<div class="vs"><div class="side home"><small>Heim</small><b>${esc(D.settings.club)}</b></div><div class="mid">vs</div><div class="side away"><small>Gast</small><b>${esc(md.opponent)}</b></div></div>`;
+  h+=`<div class="stats">
+    <div class="stat"><div class="k">${esc(fmtDate(md.date))}</div><div class="v">${eur(umsatz)}</div><div class="k">Umsatz</div></div>
+    <div class="stat"><div class="k">Kassiert</div><div class="v" style="color:var(--ok)">${eur(bezahlt)}</div></div>
+    <div class="stat"><div class="k">Noch offen</div><div class="v" style="color:var(--rot)">${eur(offen)}</div></div>`;
+  CATS.forEach(c=>{const ss=daySales.filter(s=>s.cat===c.k);const n=ss.reduce((a,s)=>a+s.qty,0);const v=ss.reduce((a,s)=>a+C.alloc[s.id].v,0);const f=n-v;
+    h+=`<div class="stat"><div class="k">${c.i} ${c.n}</div><div class="v">${n}</div>
+      <div class="split">${n?`<i class="v1" style="width:${v/n*100}%"></i><i class="v2" style="width:${f/n*100}%"></i>`:''}</div>
+      <div class="legend"><span><i style="background:var(--blau)"></i>Verein ${v}</span><span><i style="background:var(--fp)"></i>Fanprojekt ${f}</span></div></div>`});
+  h+=`</div>`;
+  h+=`<div class="teams">${vTeam(md,'heim')}${vTeam(md,'gast')}</div>`;
+  h+=`<div class="bar" style="margin-top:20px"><button class="btn blue" data-act="print" data-md="${md.id}">Abrechnung drucken</button>
+     <button class="btn danger" data-act="delMd" data-md="${md.id}">Spieltag löschen</button></div>`;
+  return h;
+}
+function suggestions(md,team){
+  const present=new Set(md.people.filter(p=>p.team===team).map(p=>p.name.toLowerCase()));
+  let names=[];
+  if(team==='heim'){names=[...D.settings.roster];
+    [...D.matchdays].sort((a,b)=>b.date.localeCompare(a.date)).forEach(m=>m.people.filter(p=>p.team==='heim').forEach(p=>names.push(p.name)))}
+  else{const o=md.opponent.trim().toLowerCase();
+    [...D.matchdays].filter(m=>m.id!==md.id&&m.opponent.trim().toLowerCase()===o).sort((a,b)=>b.date.localeCompare(a.date)).forEach(m=>m.people.filter(p=>p.team==='gast').forEach(p=>names.push(p.name)))}
+  const seen=new Set();return names.filter(n=>{const k=n.toLowerCase();if(present.has(k)||seen.has(k))return false;seen.add(k);return true}).slice(0,24);
+}
+function vTeam(md,team){
+  const ppl=md.people.filter(p=>p.team===team);
+  const sum=ppl.reduce((a,p)=>a+totalOf(md,p),0);
+  const sug=suggestions(md,team);
+  const title=team==='heim'?D.settings.club:md.opponent;
+  let h=`<section class="team ${team}"><header><h3>${esc(title)}</h3><span class="muted small">${ppl.length} ${ppl.length===1?'Person':'Personen'}, ${eur(sum)}</span></header>
+    <form class="addp" data-form="addP" data-team="${team}"><input type="text" id="add-${team}" name="n" placeholder="Name eingeben, Enter (mehrere mit Komma)" autocomplete="off" aria-label="Person hinzufügen"><button class="btn">Hinzufügen</button></form>`;
+  if(sug.length){h+=`<div class="chips">${sug.length>1?`<button class="chip all" data-act="allChips" data-team="${team}">Alle ${sug.length} übernehmen</button>`:''}${sug.map(n=>`<button class="chip" data-act="chip" data-team="${team}" data-name="${esc(n)}">+ ${esc(n)}</button>`).join('')}</div>`}
+  if(!ppl.length)h+=`<p class="muted small">${team==='heim'?'Noch keine eigenen Spieler eingetragen.':'Noch keine Gastspieler eingetragen.'}</p>`;
+  h+=`<div class="people">${ppl.map(p=>vPerson(md,p)).join('')}</div></section>`;
+  return h;
+}
+function vPerson(md,p){
+  const t=totalOf(md,p),pd=p.paid||0;
+  const st=t>0&&pd>=t-0.001?'paid':(pd>0?'part':'');
+  let btn;
+  if(t===0&&pd===0)btn=`<button class="pay" disabled>Nichts offen</button>`;
+  else if(pd>=t-0.001&&pd<=t+0.001)btn=`<button class="pay done" data-act="pay" data-p="${p.id}" title="Zahlung zurücknehmen">Bezahlt ✓</button>`;
+  else if(pd>t)btn=`<button class="pay rest" data-act="pay" data-p="${p.id}">Zahlung korrigieren</button>`;
+  else if(pd>0)btn=`<button class="pay rest" data-act="pay" data-p="${p.id}">Rest ${eur(t-pd)} kassieren</button>`;
+  else btn=`<button class="pay" data-act="pay" data-p="${p.id}">Kassieren</button>`;
+  return `<article class="person ${st}"><div class="ph"><strong title="${esc(p.name)}">${esc(p.name)}</strong>
+    <span><button class="x" data-act="printP" data-p="${p.id}" title="Rechnung drucken">🧾</button><button class="x" data-act="delP" data-p="${p.id}" title="Person entfernen">×</button></span></div>
+    ${CATS.map(c=>{const n=countOf(md,p,c.k);return `<div class="cnt"><span>${c.i} ${c.n}</span><button data-act="minus" data-p="${p.id}" data-c="${c.k}" ${n?'':'disabled'} aria-label="${c.n} minus">−</button><b>${n}</b><button class="plus" data-act="plus" data-p="${p.id}" data-c="${c.k}" aria-label="${c.n} plus">+</button></div>`}).join('')}
+    <div class="pf"><span class="sum">${eur(t)}</span>${btn}</div>
+    ${pd>t+0.001?`<div class="note">Bereits ${eur(pd)} bezahlt, ${eur(pd-t)} zu viel.</div>`:pd>0&&pd<t?`<div class="note">${eur(pd)} bereits bezahlt</div>`:''}</article>`;
+}
+
+function vBestand(){
+  const T=totals();
+  let h=`<h2>Vereinsbestand</h2><div class="stock">${CATS.map(c=>`<div class="fig"><div class="k">${c.i} ${c.n}</div><div class="v">${T.stock[c.k]}</div><div class="k">Flaschen, die zuerst verkauft werden</div></div>`).join('')}</div>`;
+  h+=`<form class="panel" data-form="batch"><h3 style="margin-bottom:4px">Einkauf erfassen</h3><p class="muted small" style="margin-top:0">Selbst gekaufte Getränke. Sie werden ab dem Einkaufszeitpunkt verkauft, bevor Getränke vom Fanprojekt drankommen.</p>
+    <div class="grid2">
+      <label class="f">Getränk<select name="cat">${CATS.map(c=>`<option value="${c.k}">${c.n}</option>`).join('')}</select></label>
+      <label class="f">Anzahl Flaschen<input type="number" name="qty" id="bqty" min="1" step="1" required></label>
+      <label class="f">Gesamtpreis (€)<input type="text" inputmode="decimal" name="cost" placeholder="0,00" required></label>
+      <label class="f">Zeitpunkt<input type="datetime-local" name="ts" value="${nowLocal()}" required></label>
+      <label class="f">Notiz<input type="text" name="note" placeholder="optional, z. B. Getränkemarkt"></label>
+    </div>
+    <div class="row" style="margin-top:12px"><span class="muted small">Schnell:</span>
+      <button type="button" class="btn ghost" data-act="qty" data-q="20">Kasten 20</button>
+      <button type="button" class="btn ghost" data-act="qty" data-q="24">Kasten 24</button>
+      <button type="button" class="btn ghost" data-act="qty" data-q="12">Kasten 12</button>
+      <label class="row small" style="margin-left:auto"><input type="checkbox" name="fromKasse" checked> aus der Kasse bezahlt</label>
+      <button class="btn primary">Einkauf speichern</button></div></form>`;
+  const bs=[...D.batches].sort((a,b)=>b.ts-a.ts);
+  h+=`<div class="panel"><h3 style="margin-bottom:10px">Einkäufe</h3>`;
+  if(!bs.length)h+=`<p class="muted">Noch keine Einkäufe erfasst. Solange nichts eingekauft ist, laufen alle Verkäufe über das Fanprojekt.</p>`;
+  else h+=`<div class="tablewrap"><table><thead><tr><th>Zeitpunkt</th><th>Getränk</th><th class="r">Menge</th><th class="r">Übrig</th><th class="r">Preis</th><th class="r">pro Flasche</th><th>Bezahlt aus</th><th>Notiz</th><th></th></tr></thead><tbody>
+    ${bs.map(b=>`<tr><td>${fmtTs(b.ts)}</td><td>${CATN[b.cat]}</td><td class="r">${b.qty}</td><td class="r"><b>${T.C.rem[b.id]}</b></td><td class="r">${eur(b.cost)}</td><td class="r">${eur(b.qty?b.cost/b.qty:0)}</td><td>${b.fromKasse?'Kasse':'privat/extern'}</td><td>${esc(b.note||'')}</td><td class="r"><button class="x" data-act="delBatch" data-id="${b.id}" title="Einkauf löschen">×</button></td></tr>`).join('')}</tbody></table></div>`;
+  return h+`</div>`;
+}
+
+function vKasse(){
+  const T=totals();
+  let h=`<h2>Kasse</h2><div class="figs">
+    <div class="fig cash"><div class="k">Kassenstand</div><div class="v">${eur(T.cash)}</div><div class="k">Bargeld, das jetzt in der Kasse sein sollte</div></div>
+    <div class="fig fp"><div class="k">Davon gehört dem Fanprojekt</div><div class="v">${eur(T.fpDue)}</div><div class="k">${eur(T.fpEarned)} angefallen, ${eur(T.fpPaid)} ausgezahlt</div></div>
+    <div class="fig"><div class="k">Reingewinn Verein</div><div class="v" style="color:var(--blau)">${eur(T.profit)}</div><div class="k">Verkauf eigener Flaschen minus Einkaufspreis</div></div>
+    <div class="fig"><div class="k">Offene Beträge</div><div class="v" style="color:var(--rot)">${eur(T.open)}</div><div class="k">noch nicht kassiert${T.over>0.001?`, ${eur(T.over)} zu viel bezahlt`:''}</div></div>
+  </div>`;
+  h+=`<div class="panel"><h3 style="margin-bottom:10px">Verkäufe gesamt</h3><div class="tablewrap"><table><thead><tr><th>Getränk</th><th class="r">Verkauft</th><th class="r">aus Vereinsbestand</th><th class="r">vom Fanprojekt</th><th class="r">Umsatz</th></tr></thead><tbody>
+    ${CATS.map(c=>{const x=T.cat[c.k];return`<tr><td>${c.i} ${c.n}</td><td class="r">${x.n}</td><td class="r">${x.v}</td><td class="r">${x.f}</td><td class="r">${eur(x.u)}</td></tr>`}).join('')}</tbody></table></div></div>`;
+  h+=`<form class="panel" data-form="move"><h3 style="margin-bottom:10px">Kassenbewegung buchen</h3><div class="grid2">
+    <label class="f">Art<select name="type"><option value="fp">Auszahlung ans Fanprojekt</option><option value="ein">Einlage in die Kasse</option><option value="aus">Entnahme aus der Kasse</option></select></label>
+    <label class="f">Betrag (€)<input type="text" inputmode="decimal" name="amt" id="mvAmt" placeholder="0,00" required></label>
+    <label class="f">Notiz<input type="text" name="note" placeholder="optional"></label>
+    <div class="row"><button class="btn primary">Buchen</button>${T.fpDue>0.004?`<button type="button" class="btn ghost" data-act="fpFill" data-v="${T.fpDue.toFixed(2)}">Fanprojekt-Betrag einsetzen</button>`:''}</div></div></form>`;
+  const log=[...D.moves.map(m=>({ts:m.ts,t:{fp:'Auszahlung Fanprojekt',ein:'Einlage',aus:'Entnahme'}[m.type],amt:m.amt,note:m.note,id:m.id,del:true})),
+    ...D.batches.filter(b=>b.fromKasse).map(b=>({ts:b.ts,t:'Einkauf '+CATN[b.cat]+' ('+b.qty+')',amt:-b.cost,note:b.note}))].sort((a,b)=>b.ts-a.ts);
+  h+=`<div class="panel"><h3 style="margin-bottom:10px">Kassenbuch</h3>${log.length?`<div class="tablewrap"><table><thead><tr><th>Zeitpunkt</th><th>Vorgang</th><th>Notiz</th><th class="r">Betrag</th><th></th></tr></thead><tbody>
+    ${log.map(l=>`<tr><td>${fmtTs(l.ts)}</td><td>${esc(l.t)}</td><td>${esc(l.note||'')}</td><td class="r" style="color:${l.amt<0?'var(--rot)':'var(--ok)'}">${eur(l.amt)}</td><td class="r">${l.del?`<button class="x" data-act="delMove" data-id="${l.id}" title="Buchung löschen">×</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">Noch keine Buchungen. Einnahmen aus den Spieltagen fließen automatisch in den Kassenstand.</p>'}
+    <p class="muted small">Startbestand der Kasse: ${eur(num(D.settings.startKasse))} (änderbar unter Einstellungen). Kassierte Getränke aller Spieltage: ${eur(T.paid)}.</p></div>`;
+  return h;
+}
+
+function vEinstellungen(){
+  const s=D.settings;
+  let fileBox;
+  if(FS_OK){
+    fileBox=`<p>${fh?`Alle Änderungen werden automatisch in <b>${esc(fhName)}</b> gespeichert.`:fhPending?`Zuletzt verbunden mit <b>${esc(fhPending.name)}</b>. Der Browser braucht nach dem Neustart einmal deine Erlaubnis.`:'Noch keine Datendatei verbunden. Die Daten liegen bisher nur in diesem Browser.'}</p>
+      <div class="row">${fhPending?'<button class="btn primary" data-act="fileReconnect">Mit Datei weiterarbeiten</button>':''}
+      <button class="btn ${fh||fhPending?'':'primary'}" data-act="fileNew">Neue Datendatei anlegen</button>
+      <button class="btn" data-act="fileOpen">Vorhandene Datendatei öffnen</button>
+      ${fh?'<button class="btn ghost" data-act="fileDisconnect">Verbindung trennen</button>':''}</div>`;
+  }else{
+    fileBox=`<p>Dieser Browser kann nicht direkt in eine Datei schreiben (das geht in Chrome und Edge). Die Daten werden im Browser gespeichert. Sichere sie regelmäßig mit „Exportieren“ in deinen Ordner und lade sie auf einem anderen Rechner mit „Importieren“.</p>`;
+  }
+  return `<h2>Einstellungen</h2>
+  <div class="panel"><h3 style="margin-bottom:8px">Stand weitergeben</h3>
+    <p class="small" style="margin-top:0">Schicke den aktuellen Stand per WhatsApp an jemanden, der den nächsten Spieltag betreut. Er lädt ihn in seiner Dartkasse und schickt danach seinen Stand zurück.</p>
+    <div class="row"><button class="btn primary" data-act="share">Stand teilen</button><button class="btn" data-act="imp">Stand laden</button></div>
+    <p class="muted small">iPhone: Datei in WhatsApp antippen, „Teilen“ und „In Dateien sichern“ wählen, dann hier „Stand laden“.</p></div>
+  <div class="panel"><h3 style="margin-bottom:8px">Speicherort</h3>${fileBox}
+    <div class="row" style="margin-top:12px"><button class="btn" data-act="exp">Exportieren (Sicherungskopie)</button><button class="btn" data-act="imp">Importieren</button></div>
+    <p class="muted small">Für einen anderen Rechner: Kopiere den Ordner mit dieser HTML-Datei, der Datendatei und ggf. logo.png. Dort die HTML-Datei öffnen und „Vorhandene Datendatei öffnen“ wählen.</p></div>
+  <div class="panel"><h3 style="margin-bottom:10px">Preise</h3><div class="tablewrap"><table><thead><tr><th>Getränk</th><th>Verkaufspreis (€)</th><th>Davon ans Fanprojekt, wenn es dessen Flasche ist (€)</th></tr></thead><tbody>
+    ${CATS.map(c=>`<tr><td>${c.i} ${c.n}</td><td><input type="text" inputmode="decimal" data-change="set" data-path="prices.${c.k}" value="${String(s.prices[c.k]).replace('.',',')}" style="width:110px"></td><td><input type="text" inputmode="decimal" data-change="set" data-path="fp.${c.k}" value="${String(s.fp[c.k]).replace('.',',')}" style="width:110px"></td></tr>`).join('')}</tbody></table></div>
+    <p class="muted small">Preisänderungen gelten für neue Buchungen. Bereits gebuchte Getränke behalten ihren Preis.</p></div>
+  <div class="panel"><div class="grid2"><label class="f">Vereinsname<input type="text" data-change="set" data-path="club" value="${esc(s.club)}"></label>
+    <label class="f">Startbestand der Kasse (€)<input type="text" inputmode="decimal" data-change="set" data-path="startKasse" value="${String(s.startKasse).replace('.',',')}"></label></div></div>
+  <div class="panel"><h3 style="margin-bottom:4px">Stammspieler</h3><p class="muted small" style="margin-top:0">Ein Name pro Zeile. Sie erscheinen am Spieltag als Schnellauswahl.</p>
+    <textarea data-change="roster">${esc(s.roster.join('\n'))}</textarea></div>
+  <div class="panel"><h3 style="margin-bottom:8px">Logo</h3><p class="muted small" style="margin-top:0">Lege das Vereinslogo als <b>logo.png</b> in denselben Ordner wie diese Datei, oder lade es hier hoch. Hochgeladene Logos werden in der Datendatei mitgespeichert.</p>
+    <div class="row"><button class="btn" data-act="logoUp">Logo hochladen</button>${D.logo?'<button class="btn ghost" data-act="logoDel">Hochgeladenes Logo entfernen</button>':''}</div></div>
+  <div class="panel"><h3 style="margin-bottom:8px">Alles zurücksetzen</h3><p class="muted small" style="margin-top:0">Löscht alle Spieltage, Einkäufe und Buchungen. Exportiere vorher eine Sicherungskopie.</p>
+    <button class="btn danger" data-act="reset">Alle Daten löschen</button></div>`;
+}
+
+/* ===================== Druck ===================== */
+function doPrint(mdId,pid){
+  const md=D.matchdays.find(m=>m.id===mdId);if(!md)return;
+  const head=`<div class="phead">${logoMarkup()}<div><h1>${esc(D.settings.club)}</h1><div>Heimspiel gegen ${esc(md.opponent)}, ${esc(fmtDate(md.date))}</div></div></div>`;
+  let h=head;
+  if(pid){
+    const p=md.people.find(x=>x.id===pid);const t=totalOf(md,p);
+    h+=`<h2>Rechnung für ${esc(p.name)}</h2><table><thead><tr><th>Getränk</th><th style="text-align:right">Anzahl</th><th style="text-align:right">Betrag</th></tr></thead><tbody>`;
+    CATS.forEach(c=>{const ss=salesOf(md,p).filter(s=>s.cat===c.k);const n=ss.reduce((a,s)=>a+s.qty,0);if(n)h+=`<tr><td>${c.n}</td><td style="text-align:right">${n}</td><td style="text-align:right">${eur(ss.reduce((a,s)=>a+s.qty*s.price,0))}</td></tr>`});
+    h+=`<tr class="tot"><td>Summe</td><td></td><td style="text-align:right">${eur(t)}</td></tr></tbody></table><p>${(p.paid||0)>=t-0.001&&t>0?'Bezahlt. Vielen Dank!':'Offen: '+eur(Math.max(0,t-(p.paid||0)))}</p>`;
+  }else{
+    let grand=0;
+    ['heim','gast'].forEach(team=>{const ppl=md.people.filter(p=>p.team===team);if(!ppl.length)return;
+      h+=`<h2>${esc(team==='heim'?D.settings.club:md.opponent)}</h2><table><thead><tr><th>Name</th>${CATS.map(c=>`<th style="text-align:right">${c.n}</th>`).join('')}<th style="text-align:right">Summe</th><th>Status</th></tr></thead><tbody>`;
+      let sub=0;ppl.forEach(p=>{const t=totalOf(md,p);sub+=t;h+=`<tr><td>${esc(p.name)}</td>${CATS.map(c=>`<td style="text-align:right">${countOf(md,p,c.k)||''}</td>`).join('')}<td style="text-align:right">${eur(t)}</td><td>${t===0?'':(p.paid||0)>=t-0.001?'bezahlt':'offen '+eur(t-(p.paid||0))}</td></tr>`});
+      grand+=sub;h+=`<tr class="tot"><td>Summe</td>${CATS.map(()=>'<td></td>').join('')}<td style="text-align:right">${eur(sub)}</td><td></td></tr></tbody></table>`});
+    h+=`<p class="tot" style="margin-top:14px">Gesamt: ${eur(grand)}</p>`;
+  }
+  document.getElementById('print').innerHTML=h;
+  setTimeout(()=>window.print(),50);
+}
+
+/* ===================== Aktionen ===================== */
+const curMd=()=>D.matchdays.find(m=>m.id===ui.md);
+function addPeople(team,names){
+  const md=curMd();if(!md)return 0;let n=0;
+  names.map(s=>s.trim()).filter(Boolean).forEach(name=>{
+    if(md.people.some(p=>p.team===team&&p.name.toLowerCase()===name.toLowerCase()))return;
+    md.people.push({id:uid(),name,team,paid:0});n++});
+  if(n)save();return n;
+}
+const act={
+  tab:el=>{ui.tab=el.dataset.tab;render();window.scrollTo(0,0)},
+  newMd:()=>{ui.showNewMd=!ui.showNewMd;ui.focus='newOpp';render()},
+  plus:el=>{const md=curMd(),c=el.dataset.c;D.sales.push({id:uid(),md:md.id,p:el.dataset.p,cat:c,qty:1,price:num(D.settings.prices[c]),fp:num(D.settings.fp[c]),ts:Date.now()});save();render()},
+  minus:el=>{const md=curMd();const ss=D.sales.filter(s=>s.md===md.id&&s.p===el.dataset.p&&s.cat===el.dataset.c).sort((a,b)=>b.ts-a.ts);
+    if(ss[0]){tomb(ss[0].id);D.sales=D.sales.filter(s=>s!==ss[0]);save();render()}},
+  pay:el=>{const md=curMd(),p=md.people.find(x=>x.id===el.dataset.p),t=totalOf(md,p),pd=p.paid||0;
+    if(pd>=t-0.001&&pd<=t+0.001){if(!confirm('Zahlung von '+p.name+' ('+eur(pd)+') zurücknehmen?'))return;p.paid=0}
+    else{p.paid=t;toast(p.name+': '+eur(t-pd)+' kassiert')}
+    save();render()},
+  delP:el=>{const md=curMd(),p=md.people.find(x=>x.id===el.dataset.p);const has=salesOf(md,p).length||p.paid;
+    if(has&&!confirm(p.name+' mit allen gebuchten Getränken entfernen?'))return;
+    tomb(p.id,...salesOf(md,p).map(s=>s.id));D.sales=D.sales.filter(s=>!(s.md===md.id&&s.p===p.id));md.people=md.people.filter(x=>x!==p);save();render()},
+  chip:el=>{addPeople(el.dataset.team,[el.dataset.name]);render()},
+  allChips:el=>{const md=curMd();addPeople(el.dataset.team,suggestions(md,el.dataset.team));render()},
+  delMd:el=>{const md=D.matchdays.find(m=>m.id===el.dataset.md);if(!confirm('Spieltag gegen '+md.opponent+' am '+fmtDate(md.date)+' mit allen Buchungen löschen?'))return;
+    tomb(md.id,...D.sales.filter(s=>s.md===md.id).map(s=>s.id));D.sales=D.sales.filter(s=>s.md!==md.id);D.matchdays=D.matchdays.filter(m=>m!==md);ui.md=null;save();render()},
+  print:el=>doPrint(el.dataset.md),
+  printP:el=>doPrint(ui.md,el.dataset.p),
+  qty:el=>{document.getElementById('bqty').value=el.dataset.q},
+  delBatch:el=>{const b=D.batches.find(x=>x.id===el.dataset.id);if(!confirm('Einkauf ('+b.qty+'× '+CATN[b.cat]+') löschen? Bereits verkaufte Flaschen werden dann dem Fanprojekt zugerechnet.'))return;
+    tomb(b.id);D.batches=D.batches.filter(x=>x!==b);save();render()},
+  fpFill:el=>{document.getElementById('mvAmt').value=String(el.dataset.v).replace('.',',')},
+  delMove:el=>{if(!confirm('Buchung löschen?'))return;tomb(el.dataset.id);D.moves=D.moves.filter(m=>m.id!==el.dataset.id);save();render()},
+  fileNew, fileOpen, fileReconnect, fileDisconnect,
+  exp:exportJson,
+  share:shareState,
+  imp:()=>document.getElementById('impFile').click(),
+  logoUp:()=>document.getElementById('logoFile').click(),
+  logoDel:()=>{D.logo=null;save();renderHeader();render()},
+  reset:()=>{if(!confirm('Wirklich alle Daten löschen? Das lässt sich nicht rückgängig machen.'))return;
+    const keep={settings:D.settings,logo:D.logo};D=normalize(keep);save();ui.md=null;render();toast('Alle Daten gelöscht')}
+};
+const forms={
+  newMd:f=>{const opp=f.opp.value.trim();if(!opp)return;const md={id:uid(),date:f.date.value||todayStr(),opponent:opp,people:[],created:Date.now()};
+    D.matchdays.push(md);ui.md=md.id;ui.showNewMd=false;save();ui.focus='add-heim';render()},
+  addP:f=>{const team=f.dataset.team;addPeople(team,f.n.value.split(','));ui.focus='add-'+team;render()},
+  batch:f=>{const qty=Math.round(num(f.qty.value));if(qty<1){toast('Bitte eine Anzahl eingeben.');return}
+    const ts=f.ts.value?new Date(f.ts.value).getTime():Date.now();
+    D.batches.push({id:uid(),cat:f.cat.value,qty,cost:num(f.cost.value),ts,fromKasse:f.fromKasse.checked,note:f.note.value.trim()});
+    save();render();toast(qty+'× '+CATN[f.cat.value]+' eingebucht')},
+  move:f=>{const a=Math.abs(num(f.amt.value));if(!a){toast('Bitte einen Betrag eingeben.');return}
+    const type=f.type.value;D.moves.push({id:uid(),ts:Date.now(),type,amt:type==='ein'?a:-a,note:f.note.value.trim()});save();render();toast('Gebucht')}
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const fn=act[el.dataset.act];if(fn){e.preventDefault();fn(el,e)}});
+document.addEventListener('submit',e=>{const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();forms[f.dataset.form]?.(f)});
+document.addEventListener('change',e=>{const el=e.target;const k=el.dataset.change;
+  if(k==='selMd'){ui.md=el.value;render()}
+  else if(k==='set'){const [a,b]=el.dataset.path.split('.');
+    if(b)D.settings[a][b]=num(el.value);else D.settings[a]=a==='club'?el.value.trim()||'DC Rot-Blau Wuppertal':num(el.value);
+    save();if(a==='club')renderHeader();toast('Gespeichert')}
+  else if(k==='roster'){D.settings.roster=el.value.split('\n').map(s=>s.trim()).filter(Boolean);save();toast('Stammspieler gespeichert')}
+});
+document.getElementById('impFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)importJson(f);e.target.value=''});
+document.getElementById('logoFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const m=320,sc=Math.min(1,m/Math.max(img.width,img.height));
+    const c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    D.logo=c.toDataURL('image/png');save();renderHeader();render();toast('Logo übernommen')};img.src=r.result};r.readAsDataURL(f)});
+window.addEventListener('beforeunload',e=>{if(fh&&fileState==='saving'){e.preventDefault();e.returnValue=''}});
+
+/* ===================== Start ===================== */
+(async function init(){
+  try{const raw=localStorage.getItem(LS_KEY);if(raw)D=normalize(JSON.parse(raw))}catch(e){}
+  renderHeader();render();status();
+  if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  if(FS_OK){const h=await idbGet('fh');
+    if(h){try{const p=await h.queryPermission({mode:'readwrite'});
+      if(p==='granted'){await useHandle(h)}else{fhPending=h;status();if(ui.tab==='einstellungen')render();
+        toast('Klicke oben rechts, um mit '+h.name+' weiterzuarbeiten')}}catch(e){}}}
+  document.getElementById('fileChip').addEventListener('click',e=>{if(fhPending){e.stopPropagation();e.preventDefault();fileReconnect()}},true);
+})();
+</script>
+</body>
+</html>
