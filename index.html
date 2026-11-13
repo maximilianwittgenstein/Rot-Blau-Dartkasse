@@ -1001,7 +1001,7 @@ function vEvent(e){
   h+=`<div class="rsvp">${[['ja','Dabei'],['vl','Vielleicht'],['nein','Nicht dabei']].map(([k,l])=>`<button class="${mine.status===k?'on '+k:''}" data-act="rsvp" data-ev="${e.id}" data-s="${k}">${l}</button>`).join('')}</div>`;
   if(ui.reason&&ui.reason.ev===e.id)h+=`<form class="reason" data-form="reason"><input type="text" name="r" id="reasonIn" placeholder="${ui.reason.s==='nein'?'Warum kannst du nicht? (Pflicht)':'Woran hängt es? (Pflicht)'}" value="${esc(mine.status===ui.reason.s?mine.reason||'':'')}" required autocomplete="off"><button class="btn primary">Speichern</button><button type="button" class="btn ghost" data-act="reasonCancel">Abbrechen</button></form>`;
   else if(mine.reason&&mine.status!=='ja')h+=`<div class="note">Deine Begründung: ${esc(mine.reason)}</div>`;
-  h+=`<div class="row" style="margin-top:10px"><button class="btn ghost" data-act="evOpen" data-ev="${e.id}">${open?'Weniger anzeigen':(e.type==='auswaerts'?'Teilnehmer und Fahrten':'Teilnehmer anzeigen')}</button>${e.type==='heim'||e.type==='training'?`<button class="btn blue" data-act="evKasse" data-ev="${e.id}">Getränke erfassen</button>`:''}</div>`;
+  h+=`<div class="row" style="margin-top:10px"><button class="btn ghost" data-act="evOpen" data-ev="${e.id}">${open?'Weniger anzeigen':(e.type==='auswaerts'?'Teilnehmer und Fahrten':'Teilnehmer anzeigen')}</button><button class="btn ghost" data-act="ics" data-ev="${e.id}">📅 In Kalender</button>${e.type==='heim'||e.type==='training'?`<button class="btn blue" data-act="evKasse" data-ev="${e.id}">Getränke erfassen</button>`:''}</div>`;
   if(open){
     const L=(arr,r)=>arr.length?arr.map(x=>`<li>${esc(x.m.name)}${r&&x.r&&x.r.reason?` <span class="r">(${esc(x.r.reason)})</span>`:''}</li>`).join(''):'<li class="r">niemand</li>';
     h+=`<div class="evdetail">${e.note?`<p class="small" style="white-space:pre-wrap;margin-top:0">${esc(e.note)}</p>`:''}
@@ -1027,6 +1027,38 @@ function vTravel(e,mine){
   const G=(l,ids)=>ids.length?`<div class="grp"><b>${l}:</b> ${N(ids)}</div>`:'';
   h+=G('<span style="color:var(--rot)">🙋 Sucht Mitfahrgelegenheit</span>',T.need)+G('🚆 Bahn oder ÖPNV',T.zug)+G('🧭 Reist selbst an',T.selbst)+G('🚲 Fahrrad',T.rad)+G('<span class="r">Anreise noch offen</span>',T.none);
   return h;
+}
+
+/* --- Kalender-Export (.ics) --- */
+const EVDUR={heim:240,auswaerts:240,training:180,sitzung:120,sonst:120};
+function icsEsc(t){return String(t||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n')}
+function icsFold(line){const by=new TextEncoder();if(by.encode(line).length<=74)return line;let out='',cur='';
+  for(const ch of line){if(by.encode(cur+ch).length>73){out+=cur+'\r\n ';cur=ch}else cur+=ch}return out+cur}
+function icsStamp(d){const p=n=>String(n).padStart(2,'0');return d.getUTCFullYear()+p(d.getUTCMonth()+1)+p(d.getUTCDate())+'T'+p(d.getUTCHours())+p(d.getUTCMinutes())+p(d.getUTCSeconds())+'Z'}
+function makeIcs(e){
+  const club=D.settings.club||'DC Rot-Blau Wuppertal';const p=n=>String(n).padStart(2,'0');
+  const title=e.type==='heim'?`${club} gegen ${e.title}`:e.type==='auswaerts'?`${e.title} gegen ${club}`:`${club}: ${e.title}`;
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//DC Rot-Blau Wuppertal//Vereins-App//DE','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  if(e.time)L.push('BEGIN:VTIMEZONE','TZID:Europe/Berlin','BEGIN:DAYLIGHT','TZOFFSETFROM:+0100','TZOFFSETTO:+0200','TZNAME:MESZ','DTSTART:19700329T020000','RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU','END:DAYLIGHT','BEGIN:STANDARD','TZOFFSETFROM:+0200','TZOFFSETTO:+0100','TZNAME:MEZ','DTSTART:19701025T030000','RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU','END:STANDARD','END:VTIMEZONE');
+  L.push('BEGIN:VEVENT','UID:'+e.id+'@dc-rotblau-app','DTSTAMP:'+icsStamp(new Date()),'SEQUENCE:0');
+  const [y,m,d]=e.date.split('-').map(Number);
+  if(e.time){const [hh,mm]=e.time.split(':').map(Number);const st=new Date(y,m-1,d,hh,mm);const en=new Date(st.getTime()+(EVDUR[e.type]||120)*60000);
+    const f=x=>x.getFullYear()+p(x.getMonth()+1)+p(x.getDate())+'T'+p(x.getHours())+p(x.getMinutes())+'00';
+    L.push('DTSTART;TZID=Europe/Berlin:'+f(st),'DTEND;TZID=Europe/Berlin:'+f(en))}
+  else{const nx=new Date(y,m-1,d+1);L.push('DTSTART;VALUE=DATE:'+e.date.replace(/-/g,''),'DTEND;VALUE=DATE:'+nx.getFullYear()+p(nx.getMonth()+1)+p(nx.getDate()))}
+  L.push('SUMMARY:'+icsEsc(title));
+  if(e.place)L.push('LOCATION:'+icsEsc(e.place));
+  const desc=[ET[e.type]||'Termin',e.meet?'Treffpunkt: '+e.meet:'',e.note||'','Zu- und Absagen in der Vereins-App: '+location.origin+location.pathname].filter(Boolean).join('\n');
+  L.push('DESCRIPTION:'+icsEsc(desc));
+  if(/^https?:/.test(location.protocol))L.push('URL:'+location.origin+location.pathname);
+  L.push('END:VEVENT','END:VCALENDAR');
+  return L.map(icsFold).join('\r\n')+'\r\n';
+}
+function downloadIcs(e){
+  const name=(ET[e.type]||'Termin')+' '+e.title+' '+e.date;const file=name.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'-')+'.ics';
+  const url=URL.createObjectURL(new Blob([makeIcs(e)],{type:'text/calendar;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download=file;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},60000);
+  toast('Kalenderdatei erstellt. Öffnen und „Hinzufügen“ wählen.');
 }
 
 /* --- Allgemeines --- */
@@ -1091,6 +1123,7 @@ function vAdmin(){
 
 Object.assign(act,{
   pickMe:el=>setMe(el.dataset.id),
+  ics:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);if(e)downloadIcs(e)},
   pickMeName:el=>setMe(createMember(el.dataset.name)),
   switchMe:()=>{SY.me='';saveSyncCfg();render()},
   evNew:()=>{ui.evForm=ui.evForm==='new'?null:'new';render()},
