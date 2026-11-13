@@ -136,7 +136,7 @@ td.r,th.r{text-align:right}
 .fig.cash{background:var(--nacht);color:#fff;border-color:var(--nacht)}
 .fig.cash .k{color:rgba(255,255,255,.7)}
 .fig.fp{background:var(--fp-bg);border-color:var(--fp)}
-.stock{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.stock{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px}
 @media (max-width:640px){.stock{grid-template-columns:1fr}}
 .stock .fig .v{color:var(--blau)}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
@@ -309,8 +309,12 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
 
 <script>
 /* ===================== Grundlagen ===================== */
-const CATS=[{k:'bier',n:'Bier',i:'🍺'},{k:'wasser',n:'Wasser',i:'💧'},{k:'soft',n:'Softdrink',i:'🥤'}];
+const CATS=[{k:'bier',n:'Bier',i:'🍺'},{k:'wasser',n:'Wasser',i:'💧'},{k:'soft',n:'Softdrink',i:'🥤'},{k:'sonst',n:'Sonstiges',i:'🥃'}];
 const CATN=Object.fromEntries(CATS.map(c=>[c.k,c.n]));
+// Name der freien Kategorie wird pro Buchung gespeichert, damit Umbenennen nichts rückwirkend ändert
+function lblOf(list,cat){if(cat!=='sonst')return CATN[cat];const ls=[...new Set(list.filter(x=>x.cat==='sonst'&&x.lbl).map(x=>x.lbl))];return ls.length?ls.join(' / '):CATN.sonst}
+const bLbl=b=>b.cat==='sonst'?(b.lbl||CATN.sonst):CATN[b.cat];
+function syncCatName(){const n=(typeof D!=='undefined'&&D.settings&&String(D.settings.otherName||'').trim())||'Sonstiges';CATS[3].n=n;CATN.sonst=n}
 const LS_KEY='dartkasse-rotblau-v1';
 const FS_OK=('showOpenFilePicker' in window)&&('showSaveFilePicker' in window);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -323,7 +327,7 @@ const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMo
 const nowLocal=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)};
 
 function blank(){return{app:'dartkasse',version:1,savedAt:null,
-  settings:{club:'DC Rot-Blau Wuppertal',prices:{bier:2,wasser:1.5,soft:1.5},fp:{bier:2,wasser:1.5,soft:1.5},startKasse:0,roster:[],pfandKasten:3,pfandFlasche:0.08,teamStart:0,playersMin:6,playersOk:8,lowStock:10,clubMail:''},
+  settings:{club:'DC Rot-Blau Wuppertal',prices:{bier:2,wasser:1.5,soft:1.5,sonst:2},fp:{bier:2,wasser:1.5,soft:1.5,sonst:2},otherName:'Sonstiges',startKasse:0,roster:[],pfandKasten:3,pfandFlasche:0.08,teamStart:0,playersMin:6,playersOk:8,lowStock:10,clubMail:''},
   logo:null,batches:[],matchdays:[],sales:[],moves:[],deleted:[],members:[],events:[],rsvps:[],posts:[],admin:{},team:[]}}
 function normalize(d){const b=blank();d=d||{};
   const s=Object.assign({},b.settings,d.settings||{});
@@ -600,6 +604,7 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 
 /* ===================== Ansichten ===================== */
 function render(){
+  syncCatName();
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
   const app=document.getElementById('app');
   document.body.classList.toggle('locked',locked()||!meOk());
@@ -692,7 +697,7 @@ function vSpieltag(){
     <div class="stat"><div class="k">Kassiert</div><div class="v" style="color:var(--ok)">${eur(bezahlt)}</div></div>
     <div class="stat"><div class="k">Noch offen</div><div class="v" style="color:var(--rot)">${eur(offen)}</div></div>`;
   CATS.forEach(c=>{const ss=daySales.filter(s=>s.cat===c.k);const n=ss.reduce((a,s)=>a+s.qty,0);const v=ss.reduce((a,s)=>a+C.alloc[s.id].v,0);const f=n-v;
-    h+=`<div class="stat"><div class="k">${c.i} ${c.n}</div><div class="v">${n}</div>
+    h+=`<div class="stat"><div class="k">${c.i} ${esc(lblOf(daySales,c.k))}</div><div class="v">${n}</div>
       <div class="split">${n?`<i class="v1" style="width:${v/n*100}%"></i><i class="v2" style="width:${f/n*100}%"></i>`:''}</div>
       <div class="legend"><span><i style="background:var(--blau)"></i>Verein ${v}</span><span><i style="background:var(--fp)"></i>Fanprojekt ${f}</span></div></div>`});
   h+=`</div>`;
@@ -741,7 +746,7 @@ function vPerson(md,p){
   else btn=`<button class="pay" data-act="pay" data-p="${p.id}">Kassieren</button>`;
   return `<article class="person ${st}"><div class="ph"><strong title="${esc(p.name)}">${esc(p.name)}</strong>
     <span><button class="x" data-act="printP" data-p="${p.id}" title="Rechnung drucken">🧾</button><button class="x" data-act="delP" data-p="${p.id}" title="Person entfernen">×</button></span></div>
-    ${CATS.map(c=>{const n=countOf(md,p,c.k);return `<div class="cnt"><span>${c.i} ${c.n}</span><button data-act="minus" data-p="${p.id}" data-c="${c.k}" ${n?'':'disabled'} aria-label="${c.n} minus">−</button><b>${n}</b><button class="plus" data-act="plus" data-p="${p.id}" data-c="${c.k}" aria-label="${c.n} plus">+</button></div>`}).join('')}
+    ${CATS.map(c=>{const n=countOf(md,p,c.k);return `<div class="cnt"><span>${c.i} ${esc(c.k==='sonst'?lblOf(salesOf(md,p).length?salesOf(md,p):D.sales.filter(s=>s.md===md.id),'sonst'):c.n)}</span><button data-act="minus" data-p="${p.id}" data-c="${c.k}" ${n?'':'disabled'} aria-label="${c.n} minus">−</button><b>${n}</b><button class="plus" data-act="plus" data-p="${p.id}" data-c="${c.k}" aria-label="${c.n} plus">+</button></div>`}).join('')}
     <div class="pf"><span class="sum">${eur(t)}</span>${btn}</div>
     ${pd>t+0.001?`<div class="note">Bereits ${eur(pd)} bezahlt, ${eur(pd-t)} zu viel.</div>`:pd>0&&pd<t?`<div class="note">${eur(pd)} bereits bezahlt</div>`:''}${p.tip>0?`<div class="note">+ ${eur(p.tip)} Trinkgeld, danke!</div>`:''}</article>`;
 }
@@ -779,7 +784,7 @@ function vBestand(){
   else h+=`<div class="tablewrap"><table><thead><tr><th>Zeitpunkt</th><th>Getränk</th><th>Gebinde</th><th class="r">Übrig</th><th class="r">Ware</th><th class="r">Pfand</th><th class="r">pro Flasche</th><th>Bezahlt von</th><th>Notiz</th><th></th></tr></thead><tbody>
     ${bs.map(b=>{const k=payerKind(b),rb=reimbOf(b);
       const pay=k==='kasse'?'Kasse':k==='extern'?'extern':`${esc(b.payer)} ${rb?'<span class="tag">erstattet</span>':`<button class="btn ghost" style="padding:4px 8px" data-act="reimb" data-id="${b.id}">Erstatten (${eur(bTotal(b))})</button>`}`;
-      return`<tr><td>${fmtTs(b.ts)}</td><td>${CATN[b.cat]}</td><td>${packTxt(b)}</td><td class="r"><b>${T.C.rem[b.id]}</b> / ${b.qty}</td><td class="r">${eur(b.cost)}</td><td class="r">${eur(b.pfand||0)}</td><td class="r">${eur(b.qty?b.cost/b.qty:0)}</td><td>${pay}</td><td>${esc(b.note||'')}</td><td class="r"><button class="x" data-act="delBatch" data-id="${b.id}" title="Einkauf löschen">×</button></td></tr>`}).join('')}</tbody></table></div>`;
+      return`<tr><td>${fmtTs(b.ts)}</td><td>${esc(bLbl(b))}</td><td>${packTxt(b)}</td><td class="r"><b>${T.C.rem[b.id]}</b> / ${b.qty}</td><td class="r">${eur(b.cost)}</td><td class="r">${eur(b.pfand||0)}</td><td class="r">${eur(b.qty?b.cost/b.qty:0)}</td><td>${pay}</td><td>${esc(b.note||'')}</td><td class="r"><button class="x" data-act="delBatch" data-id="${b.id}" title="Einkauf löschen">×</button></td></tr>`}).join('')}</tbody></table></div>`;
   return h+`</div>`;
 }
 function pfandCalc(f,target){
@@ -804,17 +809,17 @@ function vKasse(){
     <div class="fig"><div class="k">Offene Beträge</div><div class="v" style="color:var(--rot)">${eur(T.open)}</div><div class="k">Getränke, noch nicht kassiert${T.over>0.001?`, ${eur(T.over)} zu viel bezahlt`:''}</div></div>
   </div>`;
   if(T.owedList.length)h+=`<div class="panel"><h3 style="margin-bottom:10px">Offene Erstattungen</h3><div class="tablewrap"><table><thead><tr><th>Ausgelegt von</th><th>Einkauf</th><th>Datum</th><th class="r">Betrag inkl. Pfand</th><th></th></tr></thead><tbody>
-    ${T.owedList.map(b=>`<tr><td><b>${esc(b.payer)}</b></td><td>${packTxt(b)} ${CATN[b.cat]}</td><td>${fmtTs(b.ts)}</td><td class="r">${eur(bTotal(b))}</td><td class="r"><button class="btn blue" style="padding:6px 10px" data-act="reimb" data-id="${b.id}">Aus Kasse erstatten</button></td></tr>`).join('')}</tbody></table></div></div>`;
+    ${T.owedList.map(b=>`<tr><td><b>${esc(b.payer)}</b></td><td>${packTxt(b)} ${esc(bLbl(b))}</td><td>${fmtTs(b.ts)}</td><td class="r">${eur(bTotal(b))}</td><td class="r"><button class="btn blue" style="padding:6px 10px" data-act="reimb" data-id="${b.id}">Aus Kasse erstatten</button></td></tr>`).join('')}</tbody></table></div></div>`;
   h+=`<form class="panel" data-form="move"><h3 style="margin-bottom:10px">Geld buchen</h3><div class="grid2">
     <label class="f">Art<select name="type"><option value="ein">Sonstige Einnahme, z. B. Spende</option><option value="aus">Sonstige Ausgabe</option><option value="fp">Auszahlung ans Fanprojekt</option></select></label>
     <label class="f">Betrag (€)<input type="text" inputmode="decimal" name="amt" id="mvAmt" placeholder="0,00" required></label>
     <label class="f">Woher bzw. wofür?<input type="text" name="note" placeholder="z. B. Geburtstagsspende von Tom"></label>
     <div class="row"><button class="btn primary">Buchen</button>${T.fpDue>0.004?`<button type="button" class="btn ghost" data-act="fpFill" data-v="${T.fpDue.toFixed(2)}">Fanprojekt-Betrag einsetzen</button>`:''}</div></div></form>`;
   h+=`<div class="panel"><h3 style="margin-bottom:10px">Verkäufe gesamt</h3><div class="tablewrap"><table><thead><tr><th>Getränk</th><th class="r">Verkauft</th><th class="r">aus Vereinsbestand</th><th class="r">vom Fanprojekt</th><th class="r">Umsatz</th></tr></thead><tbody>
-    ${CATS.map(c=>{const x=T.cat[c.k];return`<tr><td>${c.i} ${c.n}</td><td class="r">${x.n}</td><td class="r">${x.v}</td><td class="r">${x.f}</td><td class="r">${eur(x.u)}</td></tr>`}).join('')}</tbody></table></div></div>`;
+    ${CATS.map(c=>{const x=T.cat[c.k];return`<tr><td>${c.i} ${esc(c.k==='sonst'?lblOf(D.sales,'sonst'):c.n)}</td><td class="r">${x.n}</td><td class="r">${x.v}</td><td class="r">${x.f}</td><td class="r">${eur(x.u)}</td></tr>`}).join('')}</tbody></table></div></div>`;
   const ML={fp:'Auszahlung Fanprojekt',ein:'Sonstige Einnahme',aus:'Sonstige Ausgabe',pfand:'Pfandrückgabe',erst:'Erstattung Vorkasse',trans:'Übertrag Mannschaftskasse'};
   const log=[...D.moves.map(m=>({ts:m.ts,t:ML[m.type]||m.type,amt:m.amt,note:m.note,id:m.id,del:true})),
-    ...D.batches.filter(b=>payerKind(b)==='kasse').map(b=>({ts:b.ts,t:'Einkauf '+CATN[b.cat]+', '+packTxt(b),amt:-bTotal(b),note:(b.pfand?'inkl. '+eur(b.pfand)+' Pfand. ':'')+(b.note||'')})),
+    ...D.batches.filter(b=>payerKind(b)==='kasse').map(b=>({ts:b.ts,t:'Einkauf '+bLbl(b)+', '+packTxt(b),amt:-bTotal(b),note:(b.pfand?'inkl. '+eur(b.pfand)+' Pfand. ':'')+(b.note||'')})),
     ...D.matchdays.map(m=>{const pd=m.people.reduce((a,p)=>a+(p.paid||0),0),tp=m.people.reduce((a,p)=>a+(p.tip||0),0);
       return pd+tp>0?{ts:m.created,t:'Getränke '+(m.type==='training'?'Training':'Heimspiel gegen '+m.opponent)+', '+fmtDate(m.date),amt:pd+tp,note:tp>0?'inkl. '+eur(tp)+' Trinkgeld':''}:null}).filter(Boolean)
   ].sort((a,b)=>b.ts-a.ts);
@@ -865,12 +870,12 @@ function doPrint(mdId,pid){
   if(pid){
     const p=md.people.find(x=>x.id===pid);const t=totalOf(md,p);
     h+=`<h2>Rechnung für ${esc(p.name)}</h2><table><thead><tr><th>Getränk</th><th style="text-align:right">Anzahl</th><th style="text-align:right">Betrag</th></tr></thead><tbody>`;
-    CATS.forEach(c=>{const ss=salesOf(md,p).filter(s=>s.cat===c.k);const n=ss.reduce((a,s)=>a+s.qty,0);if(n)h+=`<tr><td>${c.n}</td><td style="text-align:right">${n}</td><td style="text-align:right">${eur(ss.reduce((a,s)=>a+s.qty*s.price,0))}</td></tr>`});
+    CATS.forEach(c=>{const ss=salesOf(md,p).filter(s=>s.cat===c.k);const n=ss.reduce((a,s)=>a+s.qty,0);if(n)h+=`<tr><td>${esc(lblOf(ss,c.k))}</td><td style="text-align:right">${n}</td><td style="text-align:right">${eur(ss.reduce((a,s)=>a+s.qty*s.price,0))}</td></tr>`});
     h+=`<tr class="tot"><td>Summe</td><td></td><td style="text-align:right">${eur(t)}</td></tr></tbody></table><p>${(p.paid||0)>=t-0.001&&t>0?'Bezahlt. Vielen Dank!':'Offen: '+eur(Math.max(0,t-(p.paid||0)))}</p>`;
   }else{
     let grand=0;
     ['heim','gast'].forEach(team=>{const ppl=md.people.filter(p=>p.team===team);if(!ppl.length)return;
-      h+=`<h2>${esc(team==='heim'?D.settings.club:md.opponent)}</h2><table><thead><tr><th>Name</th>${CATS.map(c=>`<th style="text-align:right">${c.n}</th>`).join('')}<th style="text-align:right">Summe</th><th>Status</th></tr></thead><tbody>`;
+      h+=`<h2>${esc(team==='heim'?D.settings.club:md.opponent)}</h2><table><thead><tr><th>Name</th>${CATS.map(c=>`<th style="text-align:right">${esc(lblOf(D.sales.filter(s=>s.md===md.id),c.k))}</th>`).join('')}<th style="text-align:right">Summe</th><th>Status</th></tr></thead><tbody>`;
       let sub=0;ppl.forEach(p=>{const t=totalOf(md,p);sub+=t;h+=`<tr><td>${esc(p.name)}</td>${CATS.map(c=>`<td style="text-align:right">${countOf(md,p,c.k)||''}</td>`).join('')}<td style="text-align:right">${eur(t)}</td><td>${t===0?'':(p.paid||0)>=t-0.001?'bezahlt':'offen '+eur(t-(p.paid||0))}</td></tr>`});
       grand+=sub;h+=`<tr class="tot"><td>Summe</td>${CATS.map(()=>'<td></td>').join('')}<td style="text-align:right">${eur(sub)}</td><td></td></tr></tbody></table>`});
     h+=`<p class="tot" style="margin-top:14px">Gesamt: ${eur(grand)}</p>`;
@@ -891,7 +896,7 @@ function addPeople(team,names){
 const act={
   tab:el=>{ui.tab=el.dataset.tab;render();window.scrollTo(0,0)},
   newMd:el=>{const k=el.dataset.k||'spiel';ui.showNewMd=ui.showNewMd===k?false:k;ui.focus=k==='spiel'?'newOpp':null;render()},
-  plus:el=>{const md=curMd(),c=el.dataset.c;D.sales.push({id:uid(),md:md.id,p:el.dataset.p,cat:c,qty:1,price:num(D.settings.prices[c]),fp:num(D.settings.fp[c]),ts:Date.now()});save();render()},
+  plus:el=>{const md=curMd(),c=el.dataset.c;D.sales.push({id:uid(),md:md.id,p:el.dataset.p,cat:c,qty:1,price:num(D.settings.prices[c]),fp:num(D.settings.fp[c]),ts:Date.now(),...(c==='sonst'?{lbl:CATN.sonst}:{})});save();render()},
   minus:el=>{const md=curMd();const ss=D.sales.filter(s=>s.md===md.id&&s.p===el.dataset.p&&s.cat===el.dataset.c).sort((a,b)=>b.ts-a.ts);
     if(ss[0]){tomb(ss[0].id);D.sales=D.sales.filter(s=>s!==ss[0]);save();render()}},
   pay:el=>{const md=curMd(),p=md.people.find(x=>x.id===el.dataset.p),t=totalOf(md,p),pd=p.paid||0;
@@ -900,7 +905,7 @@ const act={
   pickTeam:el=>{const i=document.getElementById('newOpp');if(i)i.value=el.dataset.name},
   reimb:el=>{const b=D.batches.find(x=>x.id===el.dataset.id);if(!b||reimbOf(b))return;
     if(!confirm(eur(bTotal(b))+' aus der Kasse an '+b.payer+' erstatten?'))return;
-    D.moves.push({id:uid(),ts:Date.now(),type:'erst',amt:-bTotal(b),batch:b.id,note:'an '+b.payer+' für '+packTxt(b)+' '+CATN[b.cat]});save();render();toast('Erstattung gebucht')},
+    D.moves.push({id:uid(),ts:Date.now(),type:'erst',amt:-bTotal(b),batch:b.id,note:'an '+b.payer+' für '+packTxt(b)+' '+bLbl(b)});save();render();toast('Erstattung gebucht')},
   delP:el=>{const md=curMd(),p=md.people.find(x=>x.id===el.dataset.p);const has=salesOf(md,p).length||p.paid;
     if(has&&!confirm(p.name+' mit allen gebuchten Getränken entfernen?'))return;
     tomb(p.id,...salesOf(md,p).map(s=>s.id));D.sales=D.sales.filter(s=>!(s.md===md.id&&s.p===p.id));md.people=md.people.filter(x=>x!==p);save();render()},
@@ -911,7 +916,7 @@ const act={
   print:el=>doPrint(el.dataset.md),
   printP:el=>doPrint(ui.md,el.dataset.p),
   qty:el=>{document.getElementById('bqty').value=el.dataset.q},
-  delBatch:el=>{const b=D.batches.find(x=>x.id===el.dataset.id);if(!confirm('Einkauf ('+b.qty+'× '+CATN[b.cat]+') löschen? Bereits verkaufte Flaschen werden dann dem Fanprojekt zugerechnet.'))return;
+  delBatch:el=>{const b=D.batches.find(x=>x.id===el.dataset.id);if(!confirm('Einkauf ('+b.qty+'× '+bLbl(b)+') löschen? Bereits verkaufte Flaschen werden dann dem Fanprojekt zugerechnet.'))return;
     const rb=reimbOf(b);if(rb){tomb(rb.id);D.moves=D.moves.filter(m=>m!==rb)}tomb(b.id);D.batches=D.batches.filter(x=>x!==b);save();render()},
   fpFill:el=>{document.getElementById('mvAmt').value=String(el.dataset.v).replace('.',',')},
   delMove:el=>{if(!confirm('Buchung löschen?'))return;tomb(el.dataset.id);D.moves=D.moves.filter(m=>m.id!==el.dataset.id);save();render()},
@@ -943,7 +948,7 @@ const forms={
   batch:f=>{const F=f.elements,size=+F.size.value,n=Math.round(num(F.n.value));if(n<1){toast('Bitte eine Anzahl eingeben.');return}
     const qty=size===1?n:n*size,crates=size===1?0:n;
     const ts=F.ts.value?new Date(F.ts.value).getTime():Date.now();
-    D.batches.push({id:uid(),cat:F.cat.value,qty,crates,size,cost:num(F.cost.value),pfand:num(F.pfand.value),payer:F.payer.value.trim()||'Kasse',ts,note:F.note.value.trim()});
+    D.batches.push({id:uid(),cat:F.cat.value,...(F.cat.value==='sonst'?{lbl:CATN.sonst}:{}),qty,crates,size,cost:num(F.cost.value),pfand:num(F.pfand.value),payer:F.payer.value.trim()||'Kasse',ts,note:F.note.value.trim()});
     save();render();toast(qty+' Flaschen '+CATN[F.cat.value]+' eingebucht')},
   pfand:f=>{const F=f.elements,a=num(F.amt.value);if(a<=0){toast('Bitte einen Betrag eingeben.');return}
     const n=Math.round(num(F.n.value));D.moves.push({id:uid(),ts:Date.now(),type:'pfand',amt:a,note:[n?n+' × Kasten '+F.size.value:'',F.note.value.trim()].filter(Boolean).join(', ')});
@@ -958,7 +963,7 @@ document.addEventListener('change',e=>{const el=e.target;const k=el.dataset.chan
   else if(k==='set'){const [a,b]=el.dataset.path.split('.');
     if(b)D.settings[a][b]=num(el.value);else D.settings[a]=a==='club'?el.value.trim()||'DC Rot-Blau Wuppertal':num(el.value);
     D.settingsTs=Date.now();save();if(a==='club')renderHeader();toast('Gespeichert')}
-  else if(k==='setTxt'){D.settings[el.dataset.path]=el.value.trim();D.settingsTs=Date.now();save();toast('Gespeichert')}
+  else if(k==='setTxt'){D.settings[el.dataset.path]=el.value.trim();D.settingsTs=Date.now();save();if(el.dataset.path==='otherName')render();toast('Gespeichert')}
   else if(k==='roster'){D.settings.roster=el.value.split('\n').map(s=>s.trim()).filter(Boolean);D.settingsTs=Date.now();save();toast('Stammspieler gespeichert')}
 });
 document.getElementById('impFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)importJson(f);e.target.value=''});
@@ -1190,7 +1195,8 @@ function vAdminSettings(){
   <div class="panel"><h3 style="margin-bottom:8px">Speicherort</h3>${fileBox}
     <div class="row" style="margin-top:12px"><button class="btn" data-act="exp">Exportieren (Sicherungskopie)</button><button class="btn" data-act="imp">Importieren bzw. Stand laden</button></div>
     <p class="muted small">Für einen anderen Rechner: Kopiere den Ordner mit dieser HTML-Datei, der Datendatei und ggf. logo.png. Dort die HTML-Datei öffnen und „Vorhandene Datendatei öffnen“ wählen.</p></div>
-  <div class="panel"><h3 style="margin-bottom:10px">Preise</h3><div class="tablewrap"><table><thead><tr><th>Getränk</th><th>Verkaufspreis (€)</th><th>Davon ans Fanprojekt, wenn es dessen Flasche ist (€)</th></tr></thead><tbody>
+  <div class="panel"><h3 style="margin-bottom:10px">Preise</h3>
+    <label class="f" style="max-width:320px;margin-bottom:10px">Name der freien Kategorie (🥃)<input type="text" data-change="setTxt" data-path="otherName" value="${esc(s.otherName||'Sonstiges')}" placeholder="z. B. Schnaps, Radler"></label><div class="tablewrap"><table><thead><tr><th>Getränk</th><th>Verkaufspreis (€)</th><th>Davon ans Fanprojekt, wenn es dessen Flasche ist (€)</th></tr></thead><tbody>
     ${CATS.map(c=>`<tr><td>${c.i} ${c.n}</td><td><input type="text" inputmode="decimal" data-change="set" data-path="prices.${c.k}" value="${String(s.prices[c.k]).replace('.',',')}" style="width:110px"></td><td><input type="text" inputmode="decimal" data-change="set" data-path="fp.${c.k}" value="${String(s.fp[c.k]).replace('.',',')}" style="width:110px"></td></tr>`).join('')}</tbody></table></div>
     <p class="muted small">Preisänderungen gelten für neue Buchungen. Bereits gebuchte Getränke behalten ihren Preis.</p></div>
   <div class="panel"><div class="grid2"><label class="f">Vereinsname<input type="text" data-change="set" data-path="club" value="${esc(s.club)}"></label>
