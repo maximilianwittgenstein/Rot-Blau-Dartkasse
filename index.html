@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Dartkasse">
-<title>Getränkekasse – DC Rot-Blau Wuppertal</title>
+<title>DC Rot-Blau Wuppertal</title>
 <style>
 :root{
   --rot:#C8102E; --rot-d:#A00D25; --blau:#0B3C8C; --blau-hell:#1F5BD6; --nacht:#0E1C38;
@@ -65,6 +65,7 @@ input[type=text],input[type=number],input[type=date],input[type=datetime-local],
 textarea{width:100%;min-height:140px;resize:vertical}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted);font-weight:600}
 label.f > *{color:var(--ink);font-weight:400;font-size:1rem}
+label.f > span{color:var(--muted);font-weight:600;font-size:.85rem}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:18px}
 .empty{text-align:center;padding:48px 20px;color:var(--muted)}
 .empty strong{display:block;color:var(--ink);font-size:1.2rem;margin-bottom:6px}
@@ -172,10 +173,40 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
 .lock details{margin-top:10px;font-size:.9rem;color:var(--muted)}
 .lock details .grid2{margin-top:8px}
 .lock .btn{width:100%;margin-top:12px;padding:12px}
+.check{display:flex;gap:8px;align-items:flex-start;flex-wrap:nowrap;margin-top:6px}
+.check input{margin-top:3px;flex:none}
 .msg-err{color:var(--rot);font-size:.9rem;margin-top:10px}
 .vs.solo{grid-template-columns:1fr}
 .vs.solo .home{background:linear-gradient(100deg,var(--rot) 0 55%,var(--blau) 55%)}
 .teams.solo{grid-template-columns:1fr}
+/* Termine */
+.banner{background:var(--warn-bg);border:1px solid var(--rot);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:.95rem}
+.ev{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--rot);border-radius:16px;padding:14px;margin-bottom:12px}
+.ev.t-auswaerts{border-left-color:var(--blau)}.ev.t-training{border-left-color:var(--nacht)}.ev.t-sitzung{border-left-color:var(--fp)}.ev.t-sonst{border-left-color:var(--muted)}
+.ev-head{display:flex;gap:12px;align-items:flex-start}
+.datebox{flex:none;width:58px;text-align:center;border-radius:12px;background:var(--bg);padding:6px 0;line-height:1.15}
+.datebox b{display:block;font-size:1.5rem}.datebox small{font-size:.75rem;color:var(--muted)}
+.ev h3{font-size:1.15rem;margin:4px 0 2px}
+.meta{font-size:.9rem;color:var(--muted)}
+.tag.t-heim{background:var(--rot);color:#fff}.tag.t-auswaerts{background:var(--blau);color:#fff}.tag.t-training{background:var(--nacht);color:#fff}.tag.t-sitzung{background:var(--fp-bg);color:var(--fp)}
+.counts{display:flex;gap:14px;flex-wrap:wrap;font-size:.9rem;margin:10px 0 4px;color:var(--muted)}
+.counts .ja{color:var(--ok);font-weight:700}.counts .vl{color:var(--fp);font-weight:700}.counts .nein{color:var(--rot);font-weight:700}
+.rsvp{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.rsvp button{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 4px;font-weight:700;cursor:pointer}
+.rsvp .on.ja{background:var(--ok);border-color:var(--ok);color:#fff}.rsvp .on.vl{background:var(--fp);border-color:var(--fp);color:#fff}.rsvp .on.nein{background:var(--rot);border-color:var(--rot);color:#fff}
+.reason{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.reason input{flex:1;min-width:180px}
+.evdetail{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.who{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.who h4,.evdetail h4{margin:0 0 4px;font-size:.9rem}.who ul{margin:0;padding-left:18px;font-size:.92rem}.who .r,.grp .r{color:var(--muted)}
+.cars{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:8px 0}
+.car{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg)}
+.seats{display:flex;gap:4px;margin:6px 0;flex-wrap:wrap}.seat{width:20px;height:20px;border-radius:6px;background:var(--line);display:inline-block}.seat.full{background:var(--blau)}.seat.over{background:var(--rot)}
+.car .btn{margin-top:8px;padding:6px 12px}
+.travel{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:6px 0 10px}
+.grp{font-size:.92rem;margin:4px 0}
+.post .text{white-space:pre-wrap;line-height:1.5}
+.files{display:flex;flex-direction:column;gap:6px;margin-top:10px}.file{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.file .btn{padding:6px 10px;text-align:left}
 /* Druck */
 #print{display:none}
 @media print{
@@ -208,12 +239,14 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
   <div class="top-inner">
     <div class="brand">
       <div class="logo" id="logoBox"></div>
-      <div><h1 id="clubName">DC Rot-Blau Wuppertal</h1><p>Getränkekasse</p></div>
+      <div><h1 id="clubName">DC Rot-Blau Wuppertal</h1><p>Vereins-App</p></div>
     </div>
     <nav class="tabs" id="tabs">
-      <button data-act="tab" data-tab="spieltag">Spieltag</button>
-      <button data-act="tab" data-tab="bestand">Bestand &amp; Einkauf</button>
+      <button data-act="tab" data-tab="termine">Termine</button>
+      <button data-act="tab" data-tab="spieltag">Getränke</button>
+      <button data-act="tab" data-tab="bestand">Bestand</button>
       <button data-act="tab" data-tab="kasse">Kasse</button>
+      <button data-act="tab" data-tab="infos">Allgemeines</button>
       <button data-act="tab" data-tab="einstellungen">Einstellungen</button>
     </nav>
     <button class="filechip" data-act="share" title="Aktuellen Stand per WhatsApp & Co. teilen"><span>Stand teilen</span></button>
@@ -249,17 +282,17 @@ const nowLocal=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezone
 
 function blank(){return{app:'dartkasse',version:1,savedAt:null,
   settings:{club:'DC Rot-Blau Wuppertal',prices:{bier:2,wasser:1.5,soft:1.5},fp:{bier:2,wasser:1.5,soft:1.5},startKasse:0,roster:[],pfandKasten:3,pfandFlasche:0.08},
-  logo:null,batches:[],matchdays:[],sales:[],moves:[],deleted:[]}}
+  logo:null,batches:[],matchdays:[],sales:[],moves:[],deleted:[],members:[],events:[],rsvps:[],posts:[],admin:{}}}
 function normalize(d){const b=blank();d=d||{};
   const s=Object.assign({},b.settings,d.settings||{});
   s.prices=Object.assign({},b.settings.prices,(d.settings||{}).prices||{});
   s.fp=Object.assign({},b.settings.fp,(d.settings||{}).fp||{});
   s.roster=Array.isArray(s.roster)?s.roster:[];
-  return{...b,...d,app:'dartkasse',settings:s,batches:d.batches||[],matchdays:d.matchdays||[],sales:d.sales||[],moves:d.moves||[],deleted:d.deleted||[]}}
-const hasData=d=>d&&(d.matchdays.length||d.batches.length||d.sales.length||d.moves.length);
+  return{...b,...d,app:'dartkasse',settings:s,batches:d.batches||[],matchdays:d.matchdays||[],sales:d.sales||[],moves:d.moves||[],deleted:d.deleted||[],members:d.members||[],events:d.events||[],rsvps:d.rsvps||[],posts:d.posts||[],admin:d.admin||{}}}
+const hasData=d=>d&&(d.matchdays.length||d.batches.length||d.sales.length||d.moves.length||d.events.length||d.posts.length||d.members.length);
 
 let D=blank();
-let ui={tab:'spieltag',md:null,showNewMd:false,focus:null};
+let ui={tab:'termine',md:null,showNewMd:false,focus:null};
 
 /* ===================== Berechnung (FIFO) ===================== */
 // Vereinsflaschen werden zuerst verkauft (ältester Einkauf zuerst).
@@ -376,7 +409,11 @@ function mergeData(a,b){
     const ps=new Map(e.people.map(p=>[p.id,p]));
     m.people.forEach(p=>{const ep=ps.get(p.id);if(!ep)e.people.push(p);else if((p.paidTs||0)>(ep.paidTs||0)){ep.paid=p.paid;ep.tip=p.tip||0;ep.paidTs=p.paidTs}})});
   ['sales','batches','moves'].forEach(k=>{const ids=new Set(a[k].map(x=>x.id));b[k].forEach(x=>{if(!ids.has(x.id))a[k].push(x)})});
+  ['members','events','rsvps','posts'].forEach(k=>{const mp=new Map(a[k].map(x=>[x.id,x]));
+    b[k].forEach(x=>{const e=mp.get(x.id);if(!e){a[k].push(x);mp.set(x.id,x)}else if((x.u||0)>(e.u||0)){Object.keys(e).forEach(q=>delete e[q]);Object.assign(e,x)}})});
+  if((b.admin.u||0)>(a.admin.u||0))a.admin=b.admin;
   const del=new Set([...a.deleted,...b.deleted]);a.deleted=[...del];
+  ['members','events','rsvps','posts'].forEach(k=>a[k]=a[k].filter(x=>!del.has(x.id)));
   a.matchdays=a.matchdays.filter(m=>!del.has(m.id));a.matchdays.forEach(m=>m.people=m.people.filter(p=>!del.has(p.id)));
   ['sales','batches','moves'].forEach(k=>a[k]=a[k].filter(x=>!del.has(x.id)));
   if((b.settingsTs||0)>(a.settingsTs||0)){a.settings=b.settings;a.logo=b.logo||null;a.settingsTs=b.settingsTs}
@@ -433,9 +470,10 @@ async function shareState(){
 /* ===================== Online-Abgleich (GitHub) ===================== */
 // Der Token wird nur auf diesem Gerät gespeichert und nie in den Kassenstand oder geteilte Dateien geschrieben.
 const SYNC_KEY='dartkasse-sync-v1';
-const ghOwnerGuess=location.hostname.endsWith('.github.io')?location.hostname.split('.')[0]:'';
+const ghOwnerGuess=location.hostname.endsWith('.github.io')?location.hostname.split('.')[0]:'maximilianwittgenstein';
 let SY={owner:ghOwnerGuess,repo:'Rot-Blau-Dartkasse-Daten',path:'kasse.json',branch:'main',token:''};
 try{Object.assign(SY,JSON.parse(localStorage.getItem(SYNC_KEY)||'{}'))}catch(e){}
+if(!SY.owner)SY.owner=ghOwnerGuess;
 let syncState='off',syncErr='',syncTimer=null,syncBusy=false,syncAgain=false,lastSync=null,deferRender=false;
 function syncOn(){return!!(SY.token&&SY.owner&&SY.repo)}
 function locked(){return!syncOn()||!!SY.blocked}
@@ -450,6 +488,7 @@ function ghErr(st){if(st===401)return'Der Token ist ungültig oder abgelaufen.';
 async function ghGet(){
   const q='?ref='+encodeURIComponent(SY.branch)+'&t='+Date.now();
   const r=await fetch(ghUrl()+q,{headers:ghH(),cache:'no-store'});
+  try{const ex=r.headers.get('github-authentication-token-expiration');if(ex&&ex!==SY.tokenExp){SY.tokenExp=ex;saveSyncCfg()}}catch(e){}
   if(r.status===404){const rr=await fetch(ghRepoUrl()+'?t='+Date.now(),{headers:ghH(),cache:'no-store'});
     if(rr.status===404){const e=new Error('Das Daten-Repository „'+SY.owner+'/'+SY.repo+'“ wurde nicht gefunden, oder der Token hat keinen Zugriff darauf.');e.auth=true;throw e}
     if(!rr.ok)throw mkErr(rr.status);return{data:null,sha:null}}
@@ -467,7 +506,7 @@ async function ghPut(d,sha){
   if(!r.ok)throw mkErr(r.status);return true
 }
 function canon(d){const byId=a=>[...a].sort((x,y)=>x.id<y.id?-1:x.id>y.id?1:0);
-  return JSON.stringify({s:d.settings,st:d.settingsTs||0,l:d.logo||null,m:byId(d.matchdays).map(m=>({...m,people:byId(m.people)})),sa:byId(d.sales),b:byId(d.batches),mv:byId(d.moves),del:[...d.deleted].sort()})}
+  return JSON.stringify({s:d.settings,st:d.settingsTs||0,l:d.logo||null,m:byId(d.matchdays).map(m=>({...m,people:byId(m.people)})),sa:byId(d.sales),b:byId(d.batches),mv:byId(d.moves),del:[...d.deleted].sort(),me:byId(d.members),ev:byId(d.events),rs:byId(d.rsvps),po:byId(d.posts),ad:d.admin||{}})}
 async function syncNow(){
   if(!syncOn())return;
   if(syncBusy){syncAgain=true;return}
@@ -487,6 +526,7 @@ async function syncNow(){
     }
     if(!done)throw new Error('Mehrere Geräte speichern gerade gleichzeitig. Bitte gleich noch einmal abgleichen.');
     syncState='ok';syncErr='';lastSync=Date.now();
+    afterSync();
     if(SY.blocked){SY.blocked=false;saveSyncCfg();ui.checking=false;renderHeader();render()}
   }catch(e){syncState=navigator.onLine?'err':'offline';syncErr=navigator.onLine?(e.message||String(e)):'Keine Internetverbindung. Zum Freischalten wird Internet benötigt.';
     if(e.auth&&!SY.blocked){SY.blocked=true;saveSyncCfg()}
@@ -512,24 +552,25 @@ function renderHeader(){
   const img=new Image();img.alt='Vereinslogo';
   img.onload=()=>{box.innerHTML='';box.appendChild(img)};img.onerror=fb;
   img.src=D.logo||'logo.png';
-  document.title='Getränkekasse – '+(D.settings.club||'');
+  document.title=D.settings.club||'DC Rot-Blau Wuppertal';
 }
-function logoMarkup(){return D.logo?`<img src="${D.logo}" alt="">`:(document.querySelector('#logoBox img')?`<img src="${document.querySelector('#logoBox img').src}" alt="">`:document.getElementById('fallbackLogo').innerHTML)}
+function logoMarkup(){return D.logo?`<img src="${D.logo}" alt="">`:`<img src="logo.png" alt="" onerror="this.outerHTML=document.getElementById('fallbackLogo').innerHTML">`}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2400)}
 
 /* ===================== Ansichten ===================== */
 function render(){
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
   const app=document.getElementById('app');
-  document.body.classList.toggle('locked',locked());
+  document.body.classList.toggle('locked',locked()||!meOk());
   if(locked()){app.innerHTML=vLocked();return}
-  app.innerHTML={spieltag:vSpieltag,bestand:vBestand,kasse:vKasse,einstellungen:vEinstellungen}[ui.tab]();
+  if(!meOk()){app.innerHTML=vWho();return}
+  app.innerHTML=(VIEWS[ui.tab]||vTermine)();
   const bf=document.getElementById('batchForm');if(bf)pfandCalc(bf,null);
   if(ui.focus){const el=document.getElementById(ui.focus);if(el)el.focus();ui.focus=null}
 }
 
 function vLocked(){
-  const err=SY.blocked&&syncErr&&!ui.checking?`<p class="msg-err">${esc(syncErr)}</p>`:'';
+  const err=SY.revoked?`<p class="msg-err">${esc(SY.revoked)}</p>`:SY.blocked&&syncErr&&!ui.checking?`<p class="msg-err">${esc(syncErr)}</p>`:'';
   return `<div class="lock"><div class="lock-logo">${logoMarkup()}</div>
     <h2>Keine Daten vorhanden</h2><p class="muted">Nur sichtbar mit aktuellem Token.</p>
     <form data-form="unlock" class="panel">
@@ -562,7 +603,7 @@ function vSpieltag(){
       <div class="grid2"><label class="f">Datum<input type="date" name="date" value="${todayStr()}" required></label>
       <label class="f">Gegner (Mannschaft)<input type="text" name="opp" id="newOpp" list="oppList" placeholder="z. B. DC Heiligenhaus" required></label></div>
       ${kt.length?`<p class="small muted" style="margin:14px 0 6px">Bekannte Mannschaften:</p><div class="chips">${kt.map(t=>`<button type="button" class="chip" data-act="pickTeam" data-name="${esc(t.name)}">${esc(t.name)} (${t.n} Spieler)</button>`).join('')}</div>
-      <label class="row small"><input type="checkbox" name="take" checked> Bekannte Spieler dieser Mannschaft direkt eintragen (ohne Getränke)</label>`:''}
+      <label class="check small"><input type="checkbox" name="take" checked> Bekannte Spieler dieser Mannschaft direkt eintragen (ohne Getränke)</label>`:''}
       <div class="row" style="margin-top:12px"><button class="btn primary">Spieltag anlegen</button><button type="button" class="btn ghost" data-act="newMd" data-k="spiel">Abbrechen</button></div>
       <datalist id="oppList">${kt.map(t=>`<option value="${esc(t.name)}">`).join('')}</datalist></form>`;
   }
@@ -729,7 +770,7 @@ function vEinstellungen(){
     :syncState==='err'?`<span style="color:var(--rot)"><b>Fehler:</b> ${esc(syncErr)}</span>`
     :syncState==='offline'?'Kein Internet. Änderungen werden abgeglichen, sobald wieder eine Verbindung besteht.'
     :lastSync?'Verbunden. Zuletzt abgeglichen um '+new Date(lastSync).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr.':'Verbunden, Abgleich läuft …';
-  return `<h2>Einstellungen</h2>
+  return `<h2>Einstellungen</h2>${vProfile()}
   <form class="panel" data-form="sync"><h3 style="margin-bottom:4px">Online-Abgleich</h3>
     <p class="small" style="margin-top:0">${syncTxt}</p>
     <div class="grid2">
@@ -825,7 +866,7 @@ const act={
   share:shareState,
   syncNow:()=>{syncNow();toast('Gleiche ab …')},
   syncOff:()=>{if(!confirm('Token und alle Kassendaten von diesem Gerät entfernen? Online bleibt alles erhalten und erscheint wieder, sobald der Token erneut eingegeben wird.'))return;
-    SY.token='';SY.blocked=false;saveSyncCfg();D=blank();try{localStorage.removeItem(LS_KEY)}catch(e){};fh=null;fhPending=null;idbDel('fh');syncState='off';ui.md=null;renderHeader();status();render()},
+    SY.token='';SY.me='';SY.blocked=false;saveSyncCfg();D=blank();try{localStorage.removeItem(LS_KEY)}catch(e){};fh=null;fhPending=null;idbDel('fh');syncState='off';ui.md=null;renderHeader();status();render()},
   imp:()=>document.getElementById('impFile').click(),
   logoUp:()=>document.getElementById('logoFile').click(),
   logoDel:()=>{D.logo=null;D.settingsTs=Date.now();save();renderHeader();render()},
@@ -833,7 +874,7 @@ const act={
     const keep={settings:D.settings,logo:D.logo};D=normalize(keep);save();ui.md=null;render();toast('Alle Daten gelöscht')}
 };
 const forms={
-  unlock:f=>{const t=f.elements.token.value.trim();if(!t)return;SY.token=t;if(f.elements.owner.value.trim())SY.owner=f.elements.owner.value.trim();if(f.elements.repo.value.trim())SY.repo=f.elements.repo.value.trim();
+  unlock:f=>{const t=f.elements.token.value.trim();if(!t)return;SY.token=t;SY.revoked='';if(f.elements.owner.value.trim())SY.owner=f.elements.owner.value.trim();if(f.elements.repo.value.trim())SY.repo=f.elements.repo.value.trim();
     SY.blocked=true;saveSyncCfg();ui.checking=true;syncErr='';render();status();syncNow()},
   newTr:f=>{const md={id:uid(),type:'training',date:f.elements.date.value||todayStr(),opponent:'Training',people:[],created:Date.now()};
     const seen=new Set();D.settings.roster.forEach(n=>{const k=n.toLowerCase();if(!seen.has(k)){seen.add(k);md.people.push({id:uid(),name:n,team:'heim',paid:0})}});
@@ -872,6 +913,256 @@ document.getElementById('logoFile').addEventListener('change',e=>{const f=e.targ
     D.logo=c.toDataURL('image/png');D.settingsTs=Date.now();save();renderHeader();render();toast('Logo übernommen')};img.src=r.result};r.readAsDataURL(f)});
 window.addEventListener('beforeunload',e=>{if(fh&&fileState==='saving'){e.preventDefault();e.returnValue=''}});
 
+/* ===================== Vereins-App: Mitglieder, Termine, Allgemeines, Verwaltung ===================== */
+const ET={heim:'Heimspiel',auswaerts:'Auswärtsspiel',training:'Training',sitzung:'Teamsitzung',sonst:'Sonstiges'};
+const PC={sitzung:'Teamsitzung',info:'Info',sonst:'Sonstiges'};
+const VIEWS={termine:vTermine,spieltag:vSpieltag,bestand:vBestand,kasse:vKasse,infos:vInfos,einstellungen:vEinstellungen,admin:vAdmin};
+const me=()=>D.members.find(m=>m.id===SY.me);
+const meOk=()=>{const m=me();return!!m&&!m.blocked};
+const activeMembers=()=>D.members.filter(m=>!m.blocked).sort((a,b)=>a.name.localeCompare(b.name,'de'));
+const mName=id=>(D.members.find(m=>m.id===id)||{}).name||'Unbekannt';
+const touch=o=>{o.u=Date.now();return o};
+const tokenHint=()=>SY.token?SY.token.trim().slice(-4):'';
+const fmtSize=n=>n>1048576?(n/1048576).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(n/1024))+' KB';
+const enc=path=>path.split('/').map(encodeURIComponent).join('/');
+
+/* --- Mitglieder & Zugang --- */
+function afterSync(){
+  const m=me();
+  if(SY.me&&m&&m.blocked){revokeDevice('Dein Zugang zur App wurde gesperrt. Wende dich an den Vorstand, falls das ein Irrtum ist.');return}
+  if(m&&(Date.now()-(m.lastSeen||0)>6*36e5||m.tokenHint!==tokenHint())){m.lastSeen=Date.now();m.tokenHint=tokenHint();touch(m);save()}
+}
+function revokeDevice(msg){SY.token='';SY.me='';SY.blocked=false;SY.revoked=msg;saveSyncCfg();D=blank();try{localStorage.removeItem(LS_KEY)}catch(e){};fh=null;fhPending=null;idbDel('fh');syncState='off';ui.md=null;renderHeader();status();render()}
+function createMember(name){
+  const n=name.trim();if(!n)return null;
+  const ex=D.members.find(m=>m.name.trim().toLowerCase()===n.toLowerCase());
+  if(ex){if(ex.blocked){toast('Dieser Name ist gesperrt.');return null}return ex.id}
+  const m=touch({id:uid(),name:n,created:Date.now(),lastSeen:Date.now(),tokenHint:tokenHint(),blocked:false});D.members.push(m);return m.id;
+}
+function setMe(id){if(!id)return;SY.me=id;saveSyncCfg();const m=me();m.lastSeen=Date.now();m.tokenHint=tokenHint();touch(m);save();render();toast('Hallo '+m.name+'!')}
+function vWho(){
+  const ms=activeMembers();const extra=D.settings.roster.filter(n=>!D.members.some(m=>m.name.toLowerCase()===n.toLowerCase()));
+  return`<div class="lock"><div class="lock-logo">${logoMarkup()}</div><h2>Wer bist du?</h2>
+    <p class="muted">Damit die anderen sehen, wer zusagt, mitfährt oder etwas einträgt.</p>
+    ${ms.length||extra.length?`<div class="chips" style="justify-content:center;margin:18px 0">${ms.map(m=>`<button class="chip all" data-act="pickMe" data-id="${m.id}">${esc(m.name)}</button>`).join('')}${extra.map(n=>`<button class="chip" data-act="pickMeName" data-name="${esc(n)}">${esc(n)}</button>`).join('')}</div>`:''}
+    <form data-form="newMe" class="panel"><label class="f">${ms.length||extra.length?'Nicht in der Liste? Dein Name':'Dein Name'}<input type="text" name="n" required autocomplete="off" placeholder="z. B. Alex"></label><button class="btn primary">Das bin ich</button></form>
+    ${!lastSync?'<p class="muted small">Die Namensliste wird geladen …</p>':''}</div>`;
+}
+function tokenExpiry(){const h=SY.tokenExp&&String(SY.tokenExp).match(/\d{4}-\d{2}-\d{2}/);if(h)return{date:h[0],src:'github'};if(D.admin&&D.admin.tokenExpiry)return{date:D.admin.tokenExpiry,src:'admin'};return null}
+function daysLeft(d){const [y,m,dd]=d.split('-');return Math.round((new Date(+y,m-1,+dd)-new Date(new Date().toDateString()))/864e5)}
+function expiryBanner(){const t=tokenExpiry();if(!t)return'';const n=daysLeft(t.date);if(n>14)return'';
+  return`<div class="banner">${n<0?'Der Zugang ist abgelaufen.':n===0?'Der Zugang läuft heute ab.':`Der Zugang läuft in ${n} ${n===1?'Tag':'Tagen'} ab, am ${esc(fmtDate(t.date))}.`} ${ui.adminOk?'Bitte bei GitHub einen neuen Token erzeugen und verteilen.':'Den neuen Token bekommst du von den Verantwortlichen.'}</div>`}
+function vProfile(){const t=tokenExpiry();const m=me();
+  return`<div class="panel"><h3 style="margin-bottom:6px">Du</h3><p style="margin-top:0">Angemeldet als <b>${esc(m?m.name:'')}</b>. Token gültig bis: <b>${t?esc(fmtDate(t.date)):'unbekannt'}</b>${t&&daysLeft(t.date)<=14?' <span class="tag" style="background:var(--warn-bg);color:var(--rot)">läuft bald ab</span>':''}</p>
+    <div class="row"><button class="btn ghost" data-act="switchMe">Anderen Namen wählen</button><button class="btn" data-act="tab" data-tab="admin">Verwaltung (Admin)</button></div></div>`}
+
+/* --- Termine --- */
+const evKey=e=>e.date+(e.time||'');
+const rs=(ev,m)=>D.rsvps.find(r=>r.id===ev+'~'+m);
+function setRs(evId,patch){const id=evId+'~'+SY.me;let r=D.rsvps.find(x=>x.id===id);if(!r){r={id,ev:evId,m:SY.me};D.rsvps.push(r)}Object.assign(r,patch);touch(r);save();render()}
+function teamTitles(){return[...new Set([...knownTeams().map(x=>x.name),...D.events.filter(e=>e.type==='heim'||e.type==='auswaerts').map(e=>e.title)])].sort((a,b)=>a.localeCompare(b,'de'))}
+function vTermine(){
+  const t=todayStr();const up=D.events.filter(e=>e.date>=t).sort((a,b)=>evKey(a).localeCompare(evKey(b)));
+  const past=D.events.filter(e=>e.date<t).sort((a,b)=>evKey(b).localeCompare(evKey(a)));
+  let h=expiryBanner()+`<div class="bar"><button class="btn primary" data-act="evNew">Neuer Termin</button>${past.length?`<button class="btn ghost" data-act="evPast">${ui.showPast?'Vergangene ausblenden':'Vergangene anzeigen ('+past.length+')'}</button>`:''}</div>`;
+  if(ui.evForm)h+=vEvForm();
+  if(!up.length&&!ui.evForm)h+=`<div class="empty"><strong>Keine anstehenden Termine</strong>Lege Heim- und Auswärtsspiele, Trainings oder Teamsitzungen an. Jeder kann dann zu- oder absagen.</div>`;
+  h+=up.map(vEvent).join('');
+  if(ui.showPast&&past.length)h+=`<h2 style="margin-top:26px">Vergangene Termine</h2>`+past.map(vEvent).join('');
+  return h;
+}
+function vEvForm(){const isNew=ui.evForm==='new';const e=isNew?{type:'auswaerts',date:todayStr(),time:'19:30'}:(D.events.find(x=>x.id===ui.evForm)||{});
+  return`<form class="panel" data-form="ev"><h3 style="margin-bottom:12px">${isNew?'Neuer Termin':'Termin bearbeiten'}</h3><div class="grid2">
+    <label class="f">Art<select name="type">${Object.entries(ET).map(([k,v])=>`<option value="${k}" ${e.type===k?'selected':''}>${v}</option>`).join('')}</select></label>
+    <label class="f">Gegner bzw. Titel<input type="text" name="title" value="${esc(e.title||'')}" list="evTitles" placeholder="z. B. DC Heiligenhaus" autocomplete="off"></label>
+    <label class="f">Datum<input type="date" name="date" value="${e.date||todayStr()}" required></label>
+    <label class="f">Uhrzeit<input type="time" name="time" value="${e.time||''}"></label>
+    <label class="f">Ort, Adresse<input type="text" name="place" value="${esc(e.place||'')}" placeholder="z. B. Spielstätte des Gegners"></label>
+    <label class="f">Treffpunkt, Abfahrt<input type="text" name="meet" value="${esc(e.meet||'')}" placeholder="z. B. 18:30 am Fanprojekt"></label>
+    ${isNew?`<label class="f">Wiederholen<select name="rep"><option value="1">einmalig</option>${[2,3,4,6,8,10,12].map(n=>`<option value="${n}">wöchentlich, ${n} Termine</option>`).join('')}</select></label>`:''}
+  </div><label class="f" style="margin-top:12px">Notiz<textarea name="note" style="min-height:70px">${esc(e.note||'')}</textarea></label>
+  <datalist id="evTitles">${teamTitles().map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
+  <div class="row" style="margin-top:12px"><button class="btn primary">${isNew?'Termin anlegen':'Speichern'}</button><button type="button" class="btn ghost" data-act="evCancel">Abbrechen</button></div></form>`}
+function travel(e){
+  const act=new Set(activeMembers().map(m=>m.id));
+  const rsv=D.rsvps.filter(r=>r.ev===e.id&&(r.status==='ja'||r.status==='vl')&&act.has(r.m));
+  const drivers=rsv.filter(r=>r.mode==='fahrer');const dIds=new Set(drivers.map(r=>r.m));
+  const cars=drivers.map(r=>{const pass=rsv.filter(p=>p.mode==='mit'&&p.car===r.m).map(p=>p.m);const seats=+r.seats||0;return{d:r.m,seats,pass,free:Math.max(0,seats-pass.length)}});
+  const g=k=>rsv.filter(r=>r.mode===k).map(r=>r.m);
+  return{cars,free:cars.reduce((a,c)=>a+c.free,0),need:[...g('suche'),...rsv.filter(r=>r.mode==='mit'&&!dIds.has(r.car)).map(r=>r.m)],zug:g('zug'),selbst:g('selbst'),rad:g('rad'),none:rsv.filter(r=>!r.mode).map(r=>r.m)};
+}
+function vEvent(e){
+  const by={ja:[],vl:[],nein:[],offen:[]};activeMembers().forEach(m=>{const r=rs(e.id,m.id);by[r&&r.status?r.status:'offen'].push({m,r})});
+  const mine=rs(e.id,SY.me)||{};const open=ui.openEv===e.id;const d=new Date(e.date+'T12:00');
+  let h=`<article class="ev t-${e.type}"><div class="ev-head"><div class="datebox"><small>${d.toLocaleDateString('de-DE',{weekday:'short'})}</small><b>${d.getDate()}</b><small>${d.toLocaleDateString('de-DE',{month:'short'})}</small></div>
+    <div style="flex:1;min-width:0"><span class="tag t-${e.type}">${ET[e.type]||'Termin'}</span><h3>${esc(e.title)}</h3><div class="meta">${[e.time?e.time+' Uhr':'',e.place].filter(Boolean).map(esc).join(', ')}${e.meet?`<br>Treffpunkt: ${esc(e.meet)}`:''}</div></div></div>
+    <div class="counts"><span class="ja">✓ ${by.ja.length} dabei</span><span class="vl">? ${by.vl.length} vielleicht</span><span class="nein">✗ ${by.nein.length} nicht dabei</span><span>${by.offen.length} ohne Antwort</span></div>`;
+  if(e.type==='auswaerts'){const T=travel(e);h+=`<div class="meta">🚗 ${T.cars.length} ${T.cars.length===1?'Auto':'Autos'}, ${T.free} ${T.free===1?'freier Platz':'freie Plätze'}${T.need.length?`, <b style="color:var(--rot)">${T.need.length} ${T.need.length===1?'sucht':'suchen'} eine Mitfahrgelegenheit</b>`:''}</div>`}
+  h+=`<div class="rsvp">${[['ja','Dabei'],['vl','Vielleicht'],['nein','Nicht dabei']].map(([k,l])=>`<button class="${mine.status===k?'on '+k:''}" data-act="rsvp" data-ev="${e.id}" data-s="${k}">${l}</button>`).join('')}</div>`;
+  if(ui.reason&&ui.reason.ev===e.id)h+=`<form class="reason" data-form="reason"><input type="text" name="r" id="reasonIn" placeholder="${ui.reason.s==='nein'?'Warum kannst du nicht? (Pflicht)':'Woran hängt es? (Pflicht)'}" value="${esc(mine.status===ui.reason.s?mine.reason||'':'')}" required autocomplete="off"><button class="btn primary">Speichern</button><button type="button" class="btn ghost" data-act="reasonCancel">Abbrechen</button></form>`;
+  else if(mine.reason&&mine.status!=='ja')h+=`<div class="note">Deine Begründung: ${esc(mine.reason)}</div>`;
+  h+=`<div class="row" style="margin-top:10px"><button class="btn ghost" data-act="evOpen" data-ev="${e.id}">${open?'Weniger anzeigen':(e.type==='auswaerts'?'Teilnehmer und Fahrten':'Teilnehmer anzeigen')}</button>${e.type==='heim'||e.type==='training'?`<button class="btn blue" data-act="evKasse" data-ev="${e.id}">Getränke erfassen</button>`:''}</div>`;
+  if(open){
+    const L=(arr,r)=>arr.length?arr.map(x=>`<li>${esc(x.m.name)}${r&&x.r&&x.r.reason?` <span class="r">(${esc(x.r.reason)})</span>`:''}</li>`).join(''):'<li class="r">niemand</li>';
+    h+=`<div class="evdetail">${e.note?`<p class="small" style="white-space:pre-wrap;margin-top:0">${esc(e.note)}</p>`:''}
+      <div class="who"><div><h4>Dabei</h4><ul>${L(by.ja)}</ul></div><div><h4>Vielleicht</h4><ul>${L(by.vl,1)}</ul></div><div><h4>Nicht dabei</h4><ul>${L(by.nein,1)}</ul></div><div><h4>Ohne Antwort</h4><ul>${L(by.offen)}</ul></div></div>
+      ${e.type==='auswaerts'?vTravel(e,mine):''}
+      <div class="row" style="margin-top:12px"><button class="btn ghost" data-act="evEdit" data-ev="${e.id}">Bearbeiten</button><button class="btn danger" data-act="evDel" data-ev="${e.id}">Termin löschen</button></div></div>`;
+  }
+  return h+'</article>';
+}
+function vTravel(e,mine){
+  const T=travel(e);const going=mine.status==='ja'||mine.status==='vl';const N=ids=>ids.map(id=>esc(mName(id))).join(', ');
+  let h='<h4 style="margin-top:16px">Fahrten</h4>';
+  if(going){
+    const opts=[['','Noch offen'],['fahrer','🚗 Ich fahre und nehme Leute mit'],['suche','🙋 Ich suche eine Mitfahrgelegenheit'],['zug','🚆 Bahn oder ÖPNV'],['selbst','🧭 Ich reise selbst an'],['rad','🚲 Fahrrad']];
+    if(mine.mode==='mit')opts.splice(1,0,['mit','Ich fahre bei '+mName(mine.car)+' mit']);
+    h+=`<form class="travel" data-form="travel" data-ev="${e.id}"><label class="f">Meine Anreise<select name="mode">${opts.map(([k,l])=>`<option value="${k}" ${(mine.mode||'')===k?'selected':''}>${esc(l)}</option>`).join('')}</select></label>
+      <label class="f seatsBox" style="${mine.mode==='fahrer'?'':'display:none'}">Freie Plätze (ohne dich)<input type="number" name="seats" min="1" max="8" value="${mine.seats||3}" style="width:110px"></label><button class="btn">Speichern</button></form>`;
+  }else h+='<p class="muted small">Sag zuerst zu, dann kannst du dich als Fahrer eintragen oder in ein Auto setzen.</p>';
+  h+=`<div class="cars">${T.cars.map(c=>{const iam=SY.me===c.d,inCar=c.pass.includes(SY.me);
+    return`<div class="car"><b>🚗 ${esc(mName(c.d))}</b><div class="seats">${Array.from({length:Math.max(c.seats,c.pass.length)},(_,i)=>`<i class="seat ${i<c.pass.length?(i<c.seats?'full':'over'):''}"></i>`).join('')}</div>
+      <div class="small">${c.pass.length?N(c.pass):'Noch niemand eingestiegen'}</div><div class="small muted">${c.pass.length>c.seats?'überbucht':c.free?c.free+' '+(c.free===1?'Platz':'Plätze')+' frei':'Auto ist voll'}</div>
+      ${going&&!iam?(inCar?`<button class="btn ghost" data-act="carOut" data-ev="${e.id}">Aussteigen</button>`:c.free?`<button class="btn blue" data-act="carIn" data-ev="${e.id}" data-d="${c.d}">Mitfahren</button>`:''):''}</div>`}).join('')||'<p class="muted small">Noch hat sich niemand als Fahrer eingetragen.</p>'}</div>`;
+  const G=(l,ids)=>ids.length?`<div class="grp"><b>${l}:</b> ${N(ids)}</div>`:'';
+  h+=G('<span style="color:var(--rot)">🙋 Sucht Mitfahrgelegenheit</span>',T.need)+G('🚆 Bahn oder ÖPNV',T.zug)+G('🧭 Reist selbst an',T.selbst)+G('🚲 Fahrrad',T.rad)+G('<span class="r">Anreise noch offen</span>',T.none);
+  return h;
+}
+
+/* --- Allgemeines --- */
+async function ghUploadFile(pid,file){
+  const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=()=>rej(r.error);r.readAsDataURL(file)});
+  const safe=(file.name||'datei').replace(/[\\/:*?"<>|#%]/g,'_').trim()||'datei';
+  const path=`dateien/${pid}/${Date.now().toString(36)}-${safe}`;
+  const r=await fetch(ghRepoUrl()+'/contents/'+enc(path),{method:'PUT',headers:{...ghH(),'Content-Type':'application/json'},body:JSON.stringify({message:'Datei '+safe,content:b64,branch:SY.branch})});
+  if(!r.ok)throw mkErr(r.status);
+  return{n:file.name||safe,path,size:file.size,type:file.type||''};
+}
+async function ghDeleteFile(path){try{const u=ghRepoUrl()+'/contents/'+enc(path);
+  const r=await fetch(u+'?ref='+encodeURIComponent(SY.branch)+'&t='+Date.now(),{headers:ghH(),cache:'no-store'});if(!r.ok)return;const j=await r.json();
+  await fetch(u,{method:'DELETE',headers:{...ghH(),'Content-Type':'application/json'},body:JSON.stringify({message:'Datei entfernt',sha:j.sha,branch:SY.branch})})}catch(e){}}
+function vInfos(){
+  let h=expiryBanner()+`<div class="bar"><button class="btn primary" data-act="postNew">Neuer Eintrag</button>${Object.entries({'':'Alle',...PC}).map(([k,v])=>`<button class="chip ${(ui.pcat||'')===k?'all':''}" data-act="pcat" data-k="${k}">${v}</button>`).join('')}</div>`;
+  if(ui.postForm)h+=vPostForm();
+  const ps=D.posts.filter(p=>!ui.pcat||p.cat===ui.pcat).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.created-a.created);
+  if(!ps.length&&!ui.postForm)h+=`<div class="empty"><strong>Noch keine Einträge</strong>Hier landen Protokolle von Teamsitzungen, wichtige Infos und Dateien für alle.</div>`;
+  h+=ps.map(p=>`<article class="panel post"><div class="row" style="justify-content:space-between"><span class="tag ${p.cat==='sitzung'?'t-sitzung':''}">${PC[p.cat]||'Info'}</span><span class="muted small">${esc(fmtDate(p.date))}${p.by?', von '+esc(mName(p.by)):''}</span></div>
+    <h3 style="margin:8px 0">${esc(p.title)}</h3>${p.text?`<div class="text">${esc(p.text)}</div>`:''}
+    ${(p.files||[]).length?`<div class="files">${p.files.map((f,i)=>`<div class="file"><button class="btn ghost" data-act="fileOpen" data-p="${p.id}" data-i="${i}">📎 ${esc(f.n)}</button><span class="muted small">${fmtSize(f.size)}</span><button class="x" data-act="fileDel" data-p="${p.id}" data-i="${i}" title="Datei entfernen">×</button></div>`).join('')}</div>`:''}
+    <div class="row" style="margin-top:10px"><button class="btn ghost" data-act="postEdit" data-p="${p.id}">Bearbeiten</button><button class="btn danger" data-act="postDel" data-p="${p.id}">Löschen</button></div></article>`).join('');
+  return h;
+}
+function vPostForm(){const isNew=ui.postForm==='new';const p=isNew?{cat:'sitzung',date:todayStr()}:(D.posts.find(x=>x.id===ui.postForm)||{});
+  return`<form class="panel" data-form="post"><h3 style="margin-bottom:12px">${isNew?'Neuer Eintrag':'Eintrag bearbeiten'}</h3><div class="grid2">
+    <label class="f">Art<select name="cat">${Object.entries(PC).map(([k,v])=>`<option value="${k}" ${p.cat===k?'selected':''}>${v}</option>`).join('')}</select></label>
+    <label class="f">Titel<input type="text" name="title" value="${esc(p.title||'')}" required placeholder="z. B. Teamsitzung November"></label>
+    <label class="f">Datum<input type="date" name="date" value="${p.date||todayStr()}"></label></div>
+    <label class="f" style="margin-top:12px">Text<textarea name="text" style="min-height:130px" placeholder="Zusammenfassung, Beschlüsse, Infos …">${esc(p.text||'')}</textarea></label>
+    <label class="f" style="margin-top:12px">Dateien anhängen<input type="file" name="files" multiple></label>
+    <p class="muted small">PDF, Fotos, Word, Excel und mehr, höchstens 25 MB je Datei. Zum Hochladen und Öffnen wird Internet benötigt.</p>
+    <div class="row" style="margin-top:8px"><button class="btn primary">Speichern</button><button type="button" class="btn ghost" data-act="postCancel">Abbrechen</button></div></form>`}
+
+/* --- Verwaltung --- */
+async function pwHash(pw,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+  const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:150000,hash:'SHA-256'},k,256);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function vAdmin(){
+  const A=D.admin||{};const back='<button type="button" class="btn ghost" data-act="tab" data-tab="einstellungen">Zurück</button>';
+  if(!A.hash)return`<h2>Verwaltung</h2><form class="panel" data-form="admSet" style="max-width:480px"><p class="small" style="margin-top:0">Lege ein Admin-Passwort fest. Wer es kennt, sieht alle Zugänge, kann Mitglieder sperren und das Ablaufdatum des Tokens pflegen.</p>
+    <label class="f">Passwort, mindestens 6 Zeichen<input type="password" name="a" minlength="6" required autocomplete="new-password"></label><label class="f" style="margin-top:10px">Passwort wiederholen<input type="password" name="b" required autocomplete="new-password"></label>
+    <div class="row" style="margin-top:12px"><button class="btn primary">Passwort festlegen</button>${back}</div></form>`;
+  if(!ui.adminOk)return`<h2>Verwaltung</h2><form class="panel" data-form="admLogin" style="max-width:480px"><label class="f">Admin-Passwort<input type="password" name="a" id="admPw" required autocomplete="current-password"></label>
+    <div class="row" style="margin-top:12px"><button class="btn primary">Anmelden</button>${back}</div></form>`;
+  const t=tokenExpiry();const ms=[...D.members].sort((a,b)=>a.name.localeCompare(b.name,'de'));const cur=tokenHint();
+  return`<div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Verwaltung</h2><button class="btn ghost" data-act="admOut">Abmelden</button></div>
+  <div class="panel"><h3 style="margin-bottom:6px">Token</h3><p class="small" style="margin-top:0">${t?`Gültig bis <b>${esc(fmtDate(t.date))}</b>, noch ${daysLeft(t.date)} Tage${t.src==='github'?' (von GitHub gemeldet)':''}.`:'Das Ablaufdatum ist noch nicht hinterlegt.'}</p>
+    <form data-form="admExp" class="row"><label class="f">Ablaufdatum für alle anzeigen<input type="date" name="d" value="${esc(A.tokenExpiry||'')}"></label><button class="btn">Speichern</button></form>
+    <p class="muted small">Alle sehen das Datum in den Einstellungen und bekommen 14 Tage vorher einen Hinweis. Trage hier das Datum ein, das du bei GitHub gewählt hast.</p></div>
+  <div class="panel"><h3 style="margin-bottom:10px">Zugänge (${ms.filter(m=>!m.blocked).length} aktiv)</h3><div class="tablewrap"><table><thead><tr><th>Name</th><th>Zuletzt aktiv</th><th>Token endet auf</th><th>Status</th><th></th></tr></thead><tbody>
+    ${ms.map(m=>`<tr><td><b>${esc(m.name)}</b>${m.id===SY.me?' <span class="tag">du</span>':''}</td><td>${m.lastSeen?fmtTs(m.lastSeen):'–'}</td><td>${m.tokenHint?'…'+esc(m.tokenHint)+(m.tokenHint!==cur?' <span class="tag" style="background:var(--warn-bg);color:var(--rot)">alter Token</span>':''):'–'}</td>
+      <td>${m.blocked?'<span class="tag" style="background:var(--warn-bg);color:var(--rot)">gesperrt</span>':'aktiv'}</td>
+      <td class="r">${m.id===SY.me?'':`<button class="btn ghost" style="padding:5px 10px" data-act="admBlock" data-id="${m.id}">${m.blocked?'Entsperren':'Sperren'}</button> <button class="x" data-act="admDelM" data-id="${m.id}" title="Aus der Liste löschen">×</button>`}</td></tr>`).join('')}</tbody></table></div>
+    <p class="muted small">„Zuletzt aktiv“ wird beim Öffnen der App aktualisiert, höchstens alle paar Stunden. „Alter Token“ heißt: Die Person hat seit deinem letzten Token-Wechsel die App nicht mehr genutzt.</p></div>
+  <div class="panel"><h3 style="margin-bottom:6px">Jemanden ausschließen</h3><ol class="small" style="margin:0;padding-left:20px">
+    <li><b>Sperren</b> tippen. Die App auf dem Gerät der Person sperrt sich beim nächsten Abgleich und löscht dort alle Daten. Für die meisten Fälle reicht das.</li>
+    <li>Weil alle denselben Token nutzen, könnte sich die Person technisch mit einem anderen Namen neu anmelden. Für einen sicheren Ausschluss erzeugst du bei GitHub mit <b>Regenerate token</b> einen neuen Token und schickst ihn nur an die verbleibenden Mitglieder.</li>
+    <li>Das neue Ablaufdatum oben eintragen.</li></ol></div>
+  <form class="panel" data-form="admPw2" style="max-width:480px"><h3 style="margin-bottom:8px">Admin-Passwort ändern</h3><label class="f">Neues Passwort<input type="password" name="a" minlength="6" required autocomplete="new-password"></label><div class="row" style="margin-top:12px"><button class="btn">Ändern</button></div></form>`;
+}
+
+Object.assign(act,{
+  pickMe:el=>setMe(el.dataset.id),
+  pickMeName:el=>setMe(createMember(el.dataset.name)),
+  switchMe:()=>{SY.me='';saveSyncCfg();render()},
+  evNew:()=>{ui.evForm=ui.evForm==='new'?null:'new';render()},
+  evCancel:()=>{ui.evForm=null;render()},
+  evPast:()=>{ui.showPast=!ui.showPast;render()},
+  evOpen:el=>{ui.openEv=ui.openEv===el.dataset.ev?null:el.dataset.ev;render()},
+  evEdit:el=>{ui.evForm=el.dataset.ev;render();window.scrollTo(0,0)},
+  evDel:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);if(!e||!confirm(ET[e.type]+' „'+e.title+'“ am '+fmtDate(e.date)+' mit allen Zu- und Absagen löschen?'))return;
+    const rr=D.rsvps.filter(r=>r.ev===e.id);tomb(e.id,...rr.map(r=>r.id));D.rsvps=D.rsvps.filter(r=>r.ev!==e.id);D.events=D.events.filter(x=>x!==e);save();render()},
+  rsvp:el=>{const s=el.dataset.s;if(s==='ja'){ui.reason=null;setRs(el.dataset.ev,{status:'ja',reason:''});return}ui.reason={ev:el.dataset.ev,s};ui.focus='reasonIn';render()},
+  reasonCancel:()=>{ui.reason=null;render()},
+  carIn:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);const c=travel(e).cars.find(c=>c.d===el.dataset.d);if(!c||c.free<1){toast('Das Auto ist schon voll.');return}setRs(e.id,{mode:'mit',car:el.dataset.d});toast('Du fährst bei '+mName(el.dataset.d)+' mit')},
+  carOut:el=>setRs(el.dataset.ev,{mode:'suche',car:null}),
+  evKasse:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);if(!e)return;let md=D.matchdays.find(m=>m.ev===e.id);
+    if(!md){const tr=e.type==='training';md={id:uid(),date:e.date,opponent:tr?'Training':e.title,people:[],created:Date.now(),ev:e.id};if(tr)md.type='training';
+      const seen=new Set();const add=(n,team)=>{const k=team+'|'+n.toLowerCase();if(!seen.has(k)){seen.add(k);md.people.push({id:uid(),name:n,team,paid:0})}};
+      D.rsvps.filter(r=>r.ev===e.id&&r.status==='ja').forEach(r=>add(mName(r.m),'heim'));
+      if(tr&&!md.people.length)D.settings.roster.forEach(n=>add(n,'heim'));
+      if(!tr)guestNamesFor(e.title).forEach(n=>add(n,'gast'));
+      D.matchdays.push(md);save();toast(tr?'Trainingstag angelegt':'Spieltag angelegt')}
+    ui.md=md.id;ui.tab='spieltag';render();window.scrollTo(0,0)},
+  postNew:()=>{ui.postForm=ui.postForm==='new'?null:'new';render()},
+  postCancel:()=>{ui.postForm=null;render()},
+  postEdit:el=>{ui.postForm=el.dataset.p;render();window.scrollTo(0,0)},
+  pcat:el=>{ui.pcat=el.dataset.k;render()},
+  postDel:el=>{const p=D.posts.find(x=>x.id===el.dataset.p);if(!p||!confirm('Eintrag „'+p.title+'“'+((p.files||[]).length?' mit allen Dateien':'')+' löschen?'))return;
+    (p.files||[]).forEach(f=>ghDeleteFile(f.path));tomb(p.id);D.posts=D.posts.filter(x=>x!==p);save();render()},
+  fileOpen:async el=>{const p=D.posts.find(x=>x.id===el.dataset.p),f=p&&(p.files||[])[+el.dataset.i];if(!f)return;
+    if(!navigator.onLine){toast('Dateien lassen sich nur mit Internet öffnen.');return}
+    toast('Lade '+f.n+' …');
+    try{const r=await fetch(ghRepoUrl()+'/contents/'+enc(f.path)+'?ref='+encodeURIComponent(SY.branch),{headers:ghH('application/vnd.github.raw+json'),cache:'no-store'});if(!r.ok)throw mkErr(r.status);
+      const url=URL.createObjectURL(new Blob([await r.arrayBuffer()],{type:f.type||'application/octet-stream'}));
+      const a=document.createElement('a');a.href=url;a.download=f.n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},60000)}
+    catch(e){toast('Die Datei konnte nicht geladen werden. '+(e.message||''))}},
+  fileDel:el=>{const p=D.posts.find(x=>x.id===el.dataset.p),f=p&&(p.files||[])[+el.dataset.i];if(!f||!confirm('Datei „'+f.n+'“ löschen?'))return;
+    ghDeleteFile(f.path);p.files=p.files.filter(x=>x!==f);touch(p);save();render()},
+  admOut:()=>{ui.adminOk=false;render()},
+  admBlock:el=>{const m=D.members.find(x=>x.id===el.dataset.id);if(!m)return;if(!m.blocked&&!confirm(m.name+' sperren? Die App sperrt sich auf seinem Gerät beim nächsten Abgleich.'))return;m.blocked=!m.blocked;touch(m);save();render();toast(m.name+(m.blocked?' gesperrt':' entsperrt'))},
+  admDelM:el=>{const m=D.members.find(x=>x.id===el.dataset.id);if(!m||!confirm(m.name+' samt Zu- und Absagen aus der Liste löschen? Zum Aussperren besser „Sperren“ nutzen.'))return;
+    const rr=D.rsvps.filter(r=>r.m===m.id);tomb(m.id,...rr.map(r=>r.id));D.rsvps=D.rsvps.filter(r=>r.m!==m.id);D.members=D.members.filter(x=>x!==m);save();render()}
+});
+Object.assign(forms,{
+  newMe:f=>{setMe(createMember(f.elements.n.value))},
+  ev:f=>{const F=f.elements;const type=F.type.value;const base={type,title:F.title.value.trim()||ET[type],date:F.date.value||todayStr(),time:F.time.value,place:F.place.value.trim(),meet:F.meet.value.trim(),note:F.note.value.trim()};
+    if(ui.evForm==='new'){const n=Math.max(1,+(F.rep?F.rep.value:1)||1);
+      for(let i=0;i<n;i++){const d=new Date(base.date+'T12:00');d.setDate(d.getDate()+7*i);const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        D.events.push(touch({id:uid(),...base,date:ds,created:Date.now(),by:SY.me}))}
+      toast(n>1?n+' Termine angelegt':'Termin angelegt')}
+    else{const e=D.events.find(x=>x.id===ui.evForm);if(e){Object.assign(e,base);touch(e)}toast('Termin gespeichert')}
+    ui.evForm=null;save();render()},
+  reason:f=>{const r=f.elements.r.value.trim();if(!r){toast('Bitte eine kurze Begründung angeben.');return}const R=ui.reason;ui.reason=null;
+    setRs(R.ev,R.s==='nein'?{status:'nein',reason:r,mode:'',car:null}:{status:'vl',reason:r})},
+  travel:f=>{const F=f.elements,mode=F.mode.value,mine=rs(f.dataset.ev,SY.me)||{};
+    setRs(f.dataset.ev,{mode,seats:mode==='fahrer'?Math.min(8,Math.max(1,Math.round(num(F.seats.value))||3)):0,car:mode==='mit'?mine.car:null});toast('Anreise gespeichert')},
+  post:async f=>{const F=f.elements;const isNew=ui.postForm==='new';const p=isNew?{id:uid(),created:Date.now(),by:SY.me,files:[]}:D.posts.find(x=>x.id===ui.postForm);if(!p)return;
+    if(!F.title.value.trim()){toast('Bitte einen Titel angeben.');return}
+    const files=[...(F.files.files||[])];
+    if(files.some(x=>x.size>25*1048576)){toast('Dateien dürfen höchstens 25 MB groß sein.');return}
+    if(files.length&&!navigator.onLine){toast('Zum Hochladen von Dateien wird Internet benötigt.');return}
+    Object.assign(p,{cat:F.cat.value,title:F.title.value.trim(),date:F.date.value||todayStr(),text:F.text.value});p.files=p.files||[];
+    const btn=f.querySelector('button.primary');btn.disabled=true;let failed='';
+    for(let i=0;i<files.length;i++){btn.textContent=`Datei ${i+1} von ${files.length} wird hochgeladen …`;
+      try{p.files.push(await ghUploadFile(p.id,files[i]))}catch(e){failed=files[i].name+': '+(e.message||e);break}}
+    touch(p);if(isNew)D.posts.push(p);ui.postForm=null;save();render();toast(failed?'Upload abgebrochen bei '+failed:'Eintrag gespeichert')},
+  admSet:async f=>{const a=f.elements.a.value,b=f.elements.b.value;if(a.length<6){toast('Mindestens 6 Zeichen.');return}if(a!==b){toast('Die Passwörter stimmen nicht überein.');return}
+    const salt=uid()+uid();D.admin=touch({...D.admin,salt,hash:await pwHash(a,salt)});ui.adminOk=true;save();render();toast('Admin-Passwort festgelegt')},
+  admLogin:async f=>{const A=D.admin||{};if(A.hash&&await pwHash(f.elements.a.value,A.salt)===A.hash){ui.adminOk=true;render()}else{toast('Falsches Passwort.');f.elements.a.value=''}},
+  admExp:f=>{D.admin=touch({...D.admin,tokenExpiry:f.elements.d.value});save();render();toast('Ablaufdatum gespeichert')},
+  admPw2:async f=>{const a=f.elements.a.value;if(a.length<6){toast('Mindestens 6 Zeichen.');return}const salt=uid()+uid();D.admin=touch({...D.admin,salt,hash:await pwHash(a,salt)});save();render();toast('Passwort geändert')}
+});
+
+document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('form.travel select[name=mode]')){const b=e.target.form.querySelector('.seatsBox');if(b)b.style.display=e.target.value==='fahrer'?'':'none'}});
 /* ===================== Start ===================== */
 (async function init(){
   try{const raw=localStorage.getItem(LS_KEY);if(raw)D=normalize(JSON.parse(raw))}catch(e){}
