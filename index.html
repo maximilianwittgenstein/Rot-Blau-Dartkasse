@@ -285,6 +285,7 @@ function save(){
   D.savedAt=Date.now();
   try{localStorage.setItem(LS_KEY,JSON.stringify(D))}catch(e){}
   if(fh){fileState='saving';clearTimeout(saveTimer);saveTimer=setTimeout(writeFile,300)}
+  if(typeof syncOn==='function'&&syncOn()){clearTimeout(syncTimer);syncTimer=setTimeout(syncNow,2500);if(syncState!=='busy'){syncState='pending'}}
   status();
 }
 async function writeFile(){
@@ -296,6 +297,15 @@ async function writeFile(){
 function status(){
   const dot=document.getElementById('fileDot'),t=document.getElementById('fileText');
   dot.className='dot';
+  if(typeof syncOn==='function'&&syncOn()){
+    const tm=lastSync?new Date(lastSync).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'';
+    if(syncState==='err'){dot.classList.add('err');t.textContent='Abgleich-Fehler'}
+    else if(syncState==='busy'){t.textContent='Gleicht ab …'}
+    else if(syncState==='pending'){t.textContent='Änderung wird hochgeladen'}
+    else if(syncState==='offline'){t.textContent='Offline, gleicht später ab'}
+    else if(syncState==='ok'){dot.classList.add('ok');t.textContent='Online, Stand '+tm}
+    else{t.textContent='Online-Abgleich startet'}
+    return}
   if(fh&&fileState==='err'){dot.classList.add('err');t.textContent='Speichern fehlgeschlagen'}
   else if(fh){dot.classList.add('ok');t.textContent=fileState==='saving'?'Speichert …':'Gespeichert: '+fhName}
   else if(fhPending){t.textContent='Datei erneut verbinden'}
@@ -338,12 +348,13 @@ function mergeData(a,b){
   const ms=new Map(a.matchdays.map(m=>[m.id,m]));
   b.matchdays.forEach(m=>{const e=ms.get(m.id);if(!e){a.matchdays.push(m);return}
     const ps=new Map(e.people.map(p=>[p.id,p]));
-    m.people.forEach(p=>{const ep=ps.get(p.id);if(!ep)e.people.push(p);else ep.paid=Math.max(ep.paid||0,p.paid||0)})});
+    m.people.forEach(p=>{const ep=ps.get(p.id);if(!ep)e.people.push(p);else if((p.paidTs||0)>(ep.paidTs||0)){ep.paid=p.paid;ep.paidTs=p.paidTs}})});
   ['sales','batches','moves'].forEach(k=>{const ids=new Set(a[k].map(x=>x.id));b[k].forEach(x=>{if(!ids.has(x.id))a[k].push(x)})});
   const del=new Set([...a.deleted,...b.deleted]);a.deleted=[...del];
   a.matchdays=a.matchdays.filter(m=>!del.has(m.id));a.matchdays.forEach(m=>m.people=m.people.filter(p=>!del.has(p.id)));
   ['sales','batches','moves'].forEach(k=>a[k]=a[k].filter(x=>!del.has(x.id)));
-  if((b.savedAt||0)>(a.savedAt||0)){a.settings=b.settings;if(b.logo)a.logo=b.logo}
+  if((b.settingsTs||0)>(a.settingsTs||0)){a.settings=b.settings;a.logo=b.logo||null;a.settingsTs=b.settingsTs}
+  a.savedAt=Math.max(a.savedAt||0,b.savedAt||0)||null;
   return a;
 }
 let pendingImport=null;
@@ -369,6 +380,75 @@ async function shareState(){
     catch(e){if(e.name!=='AbortError')toast(e.message)}
   }else{exportJson();toast('Datei heruntergeladen. Du kannst sie jetzt per WhatsApp verschicken.')}
 }
+
+/* ===================== Online-Abgleich (GitHub) ===================== */
+// Der Token wird nur auf diesem Gerät gespeichert und nie in den Kassenstand oder geteilte Dateien geschrieben.
+const SYNC_KEY='dartkasse-sync-v1';
+const ghOwnerGuess=location.hostname.endsWith('.github.io')?location.hostname.split('.')[0]:'';
+let SY={owner:ghOwnerGuess,repo:'Rot-Blau-Dartkasse-Daten',path:'kasse.json',branch:'main',token:''};
+try{Object.assign(SY,JSON.parse(localStorage.getItem(SYNC_KEY)||'{}'))}catch(e){}
+let syncState='off',syncErr='',syncTimer=null,syncBusy=false,syncAgain=false,lastSync=null,deferRender=false;
+function syncOn(){return!!(SY.token&&SY.owner&&SY.repo)}
+function saveSyncCfg(){try{localStorage.setItem(SYNC_KEY,JSON.stringify(SY))}catch(e){}}
+const b64e=str=>{const by=new TextEncoder().encode(str);let bin='';for(let i=0;i<by.length;i+=0x8000)bin+=String.fromCharCode.apply(null,by.subarray(i,i+0x8000));return btoa(bin)};
+const b64d=b=>new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g,'')),c=>c.charCodeAt(0)));
+const ghRepoUrl=()=>`https://api.github.com/repos/${encodeURIComponent(SY.owner.trim())}/${encodeURIComponent(SY.repo.trim())}`;
+const ghUrl=()=>ghRepoUrl()+'/contents/'+SY.path.split('/').map(encodeURIComponent).join('/');
+const ghH=(acc)=>({'Authorization':'Bearer '+SY.token.trim(),'Accept':acc||'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'});
+function ghErr(st){if(st===401)return'Der Token ist ungültig oder abgelaufen.';if(st===403)return'Der Token darf dieses Repository nicht beschreiben. Prüfe die Berechtigung „Contents: Read and write“.';return'GitHub antwortet mit Fehler '+st+'.'}
+async function ghGet(){
+  const q='?ref='+encodeURIComponent(SY.branch)+'&t='+Date.now();
+  const r=await fetch(ghUrl()+q,{headers:ghH(),cache:'no-store'});
+  if(r.status===404){const rr=await fetch(ghRepoUrl()+'?t='+Date.now(),{headers:ghH(),cache:'no-store'});
+    if(rr.status===404)throw new Error('Das Daten-Repository „'+SY.owner+'/'+SY.repo+'“ wurde nicht gefunden, oder der Token hat keinen Zugriff darauf.');
+    if(!rr.ok)throw new Error(ghErr(rr.status));return{data:null,sha:null}}
+  if(!r.ok)throw new Error(ghErr(r.status));
+  const j=await r.json();let txt;
+  if(j.content&&j.encoding==='base64')txt=b64d(j.content);
+  else{const rr=await fetch(ghUrl()+q,{headers:ghH('application/vnd.github.raw+json'),cache:'no-store'});if(!rr.ok)throw new Error(ghErr(rr.status));txt=await rr.text()}
+  let d;try{d=JSON.parse(txt)}catch(e){throw new Error('Die Datei '+SY.path+' im Daten-Repository ist beschädigt.')}
+  return{data:normalize(d),sha:j.sha}
+}
+async function ghPut(d,sha){
+  const body={message:'Kassenstand '+fmtTs(Date.now()),content:b64e(JSON.stringify(d,null,1)),branch:SY.branch};if(sha)body.sha=sha;
+  const r=await fetch(ghUrl(),{method:'PUT',headers:{...ghH(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(r.status===409||r.status===422)return false; // jemand anderes hat gerade gespeichert: neu laden und erneut zusammenführen
+  if(!r.ok)throw new Error(ghErr(r.status));return true
+}
+function canon(d){const byId=a=>[...a].sort((x,y)=>x.id<y.id?-1:x.id>y.id?1:0);
+  return JSON.stringify({s:d.settings,st:d.settingsTs||0,l:d.logo||null,m:byId(d.matchdays).map(m=>({...m,people:byId(m.people)})),sa:byId(d.sales),b:byId(d.batches),mv:byId(d.moves),del:[...d.deleted].sort()})}
+async function syncNow(){
+  if(!syncOn())return;
+  if(syncBusy){syncAgain=true;return}
+  if(!navigator.onLine){syncState='offline';status();return}
+  clearTimeout(syncTimer);syncBusy=true;syncState='busy';status();
+  try{
+    let done=false;
+    for(let i=0;i<5&&!done;i++){
+      const{data:remote,sha}=await ghGet();
+      const merged=remote?mergeData(remote,D):normalize(JSON.parse(JSON.stringify(D)));
+      if(!remote||canon(merged)!==canon(remote)){if(!(await ghPut(merged,sha)))continue}
+      if(canon(merged)!==canon(D)){
+        const before=canon(D);D=mergeData(D,merged);
+        if(canon(D)!==before){try{localStorage.setItem(LS_KEY,JSON.stringify(D))}catch(e){};if(fh)writeFile();softRender()}
+      }
+      done=true;
+    }
+    if(!done)throw new Error('Mehrere Geräte speichern gerade gleichzeitig. Bitte gleich noch einmal abgleichen.');
+    syncState='ok';syncErr='';lastSync=Date.now();
+  }catch(e){syncState=navigator.onLine?'err':'offline';syncErr=navigator.onLine?(e.message||String(e)):''}
+  syncBusy=false;status();if(ui.tab==='einstellungen')softRender();
+  if(syncAgain){syncAgain=false;syncNow()}
+}
+function softRender(){
+  const a=document.activeElement;
+  if(a&&a.closest&&a.closest('#app')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){deferRender=true;return}
+  document.getElementById('clubName').textContent=D.settings.club;render()
+}
+document.addEventListener('focusout',()=>{if(deferRender)setTimeout(()=>{const a=document.activeElement;if(deferRender&&!(a&&a.closest&&a.closest('#app')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))){deferRender=false;renderHeader();render()}},350)});
+window.addEventListener('online',()=>syncNow());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncNow()});
+setInterval(()=>{if(document.visibilityState==='visible'&&!syncBusy)syncNow()},60000);
 
 /* ===================== Kopfbereich ===================== */
 function renderHeader(){
@@ -525,8 +605,22 @@ function vEinstellungen(){
   }else{
     fileBox=`<p>Dieser Browser kann nicht direkt in eine Datei schreiben (das geht in Chrome und Edge). Die Daten werden im Browser gespeichert. Sichere sie regelmäßig mit „Exportieren“ in deinen Ordner und lade sie auf einem anderen Rechner mit „Importieren“.</p>`;
   }
+  const syncTxt=!syncOn()?'Noch nicht eingerichtet. Ohne Online-Abgleich liegen die Daten nur auf diesem Gerät.'
+    :syncState==='err'?`<span style="color:var(--rot)"><b>Fehler:</b> ${esc(syncErr)}</span>`
+    :syncState==='offline'?'Kein Internet. Änderungen werden abgeglichen, sobald wieder eine Verbindung besteht.'
+    :lastSync?'Verbunden. Zuletzt abgeglichen um '+new Date(lastSync).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr.':'Verbunden, Abgleich läuft …';
   return `<h2>Einstellungen</h2>
-  <div class="panel"><h3 style="margin-bottom:8px">Stand weitergeben</h3>
+  <form class="panel" data-form="sync"><h3 style="margin-bottom:4px">Online-Abgleich</h3>
+    <p class="small" style="margin-top:0">${syncTxt}</p>
+    <div class="grid2">
+      <label class="f">GitHub-Benutzer<input type="text" name="owner" value="${esc(SY.owner)}" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
+      <label class="f">Daten-Repository<input type="text" name="repo" value="${esc(SY.repo)}" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
+      <label class="f">Token${SY.token?' (hinterlegt ✓)':''}<input type="password" name="token" placeholder="${SY.token?'nur zum Ändern eingeben':'github_pat_…'}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn primary">${syncOn()?'Speichern':'Verbinden'}</button>
+      ${syncOn()?'<button type="button" class="btn" data-act="syncNow">Jetzt abgleichen</button><button type="button" class="btn ghost" data-act="syncOff">Auf diesem Gerät trennen</button>':''}</div>
+    <p class="muted small">Der Token bleibt nur auf diesem Gerät gespeichert und wird nie geteilt oder exportiert.</p></form>
+  <div class="panel"><h3 style="margin-bottom:8px">Stand weitergeben (ohne Online-Abgleich)</h3>
     <p class="small" style="margin-top:0">Schicke den aktuellen Stand per WhatsApp an jemanden, der den nächsten Spieltag betreut. Er lädt ihn in seiner Dartkasse und schickt danach seinen Stand zurück.</p>
     <div class="row"><button class="btn primary" data-act="share">Stand teilen</button><button class="btn" data-act="imp">Stand laden</button></div>
     <p class="muted small">iPhone: Datei in WhatsApp antippen, „Teilen“ und „In Dateien sichern“ wählen, dann hier „Stand laden“.</p></div>
@@ -584,8 +678,8 @@ const act={
   minus:el=>{const md=curMd();const ss=D.sales.filter(s=>s.md===md.id&&s.p===el.dataset.p&&s.cat===el.dataset.c).sort((a,b)=>b.ts-a.ts);
     if(ss[0]){tomb(ss[0].id);D.sales=D.sales.filter(s=>s!==ss[0]);save();render()}},
   pay:el=>{const md=curMd(),p=md.people.find(x=>x.id===el.dataset.p),t=totalOf(md,p),pd=p.paid||0;
-    if(pd>=t-0.001&&pd<=t+0.001){if(!confirm('Zahlung von '+p.name+' ('+eur(pd)+') zurücknehmen?'))return;p.paid=0}
-    else{p.paid=t;toast(p.name+': '+eur(t-pd)+' kassiert')}
+    if(pd>=t-0.001&&pd<=t+0.001){if(!confirm('Zahlung von '+p.name+' ('+eur(pd)+') zurücknehmen?'))return;p.paid=0;p.paidTs=Date.now()}
+    else{p.paid=t;p.paidTs=Date.now();toast(p.name+': '+eur(t-pd)+' kassiert')}
     save();render()},
   delP:el=>{const md=curMd(),p=md.people.find(x=>x.id===el.dataset.p);const has=salesOf(md,p).length||p.paid;
     if(has&&!confirm(p.name+' mit allen gebuchten Getränken entfernen?'))return;
@@ -604,13 +698,18 @@ const act={
   fileNew, fileOpen, fileReconnect, fileDisconnect,
   exp:exportJson,
   share:shareState,
+  syncNow:()=>{syncNow();toast('Gleiche ab …')},
+  syncOff:()=>{if(!confirm('Online-Abgleich auf diesem Gerät trennen? Der Token wird hier gelöscht, die Daten bleiben erhalten.'))return;SY.token='';saveSyncCfg();syncState='off';status();render()},
   imp:()=>document.getElementById('impFile').click(),
   logoUp:()=>document.getElementById('logoFile').click(),
-  logoDel:()=>{D.logo=null;save();renderHeader();render()},
+  logoDel:()=>{D.logo=null;D.settingsTs=Date.now();save();renderHeader();render()},
   reset:()=>{if(!confirm('Wirklich alle Daten löschen? Das lässt sich nicht rückgängig machen.'))return;
     const keep={settings:D.settings,logo:D.logo};D=normalize(keep);save();ui.md=null;render();toast('Alle Daten gelöscht')}
 };
 const forms={
+  sync:f=>{SY.owner=f.owner.value.trim();SY.repo=f.repo.value.trim();if(f.token.value.trim())SY.token=f.token.value.trim();
+    if(!SY.token){toast('Bitte den Token eintragen.');return}
+    saveSyncCfg();syncState='busy';render();status();syncNow().then(()=>{if(syncState==='ok')toast('Online-Abgleich eingerichtet')})},
   newMd:f=>{const opp=f.opp.value.trim();if(!opp)return;const md={id:uid(),date:f.date.value||todayStr(),opponent:opp,people:[],created:Date.now()};
     D.matchdays.push(md);ui.md=md.id;ui.showNewMd=false;save();ui.focus='add-heim';render()},
   addP:f=>{const team=f.dataset.team;addPeople(team,f.n.value.split(','));ui.focus='add-'+team;render()},
@@ -627,14 +726,14 @@ document.addEventListener('change',e=>{const el=e.target;const k=el.dataset.chan
   if(k==='selMd'){ui.md=el.value;render()}
   else if(k==='set'){const [a,b]=el.dataset.path.split('.');
     if(b)D.settings[a][b]=num(el.value);else D.settings[a]=a==='club'?el.value.trim()||'DC Rot-Blau Wuppertal':num(el.value);
-    save();if(a==='club')renderHeader();toast('Gespeichert')}
-  else if(k==='roster'){D.settings.roster=el.value.split('\n').map(s=>s.trim()).filter(Boolean);save();toast('Stammspieler gespeichert')}
+    D.settingsTs=Date.now();save();if(a==='club')renderHeader();toast('Gespeichert')}
+  else if(k==='roster'){D.settings.roster=el.value.split('\n').map(s=>s.trim()).filter(Boolean);D.settingsTs=Date.now();save();toast('Stammspieler gespeichert')}
 });
 document.getElementById('impFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)importJson(f);e.target.value=''});
 document.getElementById('logoFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
   const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const m=320,sc=Math.min(1,m/Math.max(img.width,img.height));
     const c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-    D.logo=c.toDataURL('image/png');save();renderHeader();render();toast('Logo übernommen')};img.src=r.result};r.readAsDataURL(f)});
+    D.logo=c.toDataURL('image/png');D.settingsTs=Date.now();save();renderHeader();render();toast('Logo übernommen')};img.src=r.result};r.readAsDataURL(f)});
 window.addEventListener('beforeunload',e=>{if(fh&&fileState==='saving'){e.preventDefault();e.returnValue=''}});
 
 /* ===================== Start ===================== */
@@ -643,11 +742,12 @@ window.addEventListener('beforeunload',e=>{if(fh&&fileState==='saving'){e.preven
   renderHeader();render();status();
   if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  if(syncOn())syncNow();
   if(FS_OK){const h=await idbGet('fh');
     if(h){try{const p=await h.queryPermission({mode:'readwrite'});
       if(p==='granted'){await useHandle(h)}else{fhPending=h;status();if(ui.tab==='einstellungen')render();
         toast('Klicke oben rechts, um mit '+h.name+' weiterzuarbeiten')}}catch(e){}}}
-  document.getElementById('fileChip').addEventListener('click',e=>{if(fhPending){e.stopPropagation();e.preventDefault();fileReconnect()}},true);
+  document.getElementById('fileChip').addEventListener('click',e=>{if(syncOn()&&syncState!=='err'){e.stopPropagation();e.preventDefault();syncNow();toast('Gleiche ab …');return}if(fhPending){e.stopPropagation();e.preventDefault();fileReconnect()}},true);
 })();
 </script>
 </body>
