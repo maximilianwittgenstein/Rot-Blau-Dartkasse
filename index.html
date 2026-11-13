@@ -207,6 +207,30 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
 .post .text{white-space:pre-wrap;line-height:1.5}
 .files{display:flex;flex-direction:column;gap:6px;margin-top:10px}.file{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .file .btn{padding:6px 10px;text-align:left}
+/* Start / Dashboard */
+.biglogo{max-width:260px;margin:0 auto 14px}.biglogo img{width:100%;display:block}
+.hero{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 22px;margin-bottom:18px}
+.hero img{width:100%;display:block}.hero h2{font-size:1.7rem;margin:0 0 4px}.hero p{margin:0;color:var(--muted)}
+@media (max-width:640px){.hero{grid-template-columns:1fr;text-align:center}.hero .hl{max-width:210px;margin:0 auto}}
+@media (prefers-color-scheme:dark){.hero .hl,.biglogo{background:#fff;border-radius:14px;padding:6px}}
+.dgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:18px;align-items:start}@media (max-width:900px){.dgrid{grid-template-columns:1fr}}
+.warn{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.warn:last-child{border-bottom:0}
+.warn .ic{font-size:1.3rem;flex:none;width:28px;text-align:center}.warn .tx{flex:1;font-size:.95rem}.warn .btn{padding:6px 10px;flex:none}
+.warn.hi .tx b{color:var(--rot)}
+.mini{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.mini:last-child{border-bottom:0}
+.mini .datebox{width:50px}.mini .datebox b{font-size:1.2rem}.mini .tx{flex:1;min-width:0}.mini .tx b{display:block}
+.mystat{font-size:.78rem;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.mystat.ja{background:var(--ok-bg);color:var(--ok)}.mystat.vl{background:var(--fp-bg);color:var(--fp)}.mystat.nein{background:var(--warn-bg);color:var(--rot)}.mystat.offen{background:var(--rot);color:#fff}
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kgrid .fig{padding:12px 14px}.kgrid .fig .v{font-size:1.35rem}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:16px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:8px 16px;font-weight:700;cursor:pointer;color:var(--muted)}.seg button.on{background:var(--nacht);color:#fff}
+.wsv{background:linear-gradient(120deg,#C8102E 0 50%,#9E0C24 50%);color:#fff;border-radius:16px;padding:16px 18px}
+.wsv a.btn{text-decoration:none}.wsv h3{margin:0 0 4px}.wsv p{margin:0 0 10px;opacity:.9;font-size:.92rem}.wsv .btn{background:#fff;color:#9E0C24;border-color:#fff}
+.contact{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line)}.contact:last-child{border:0}
+.contact b{flex:1;min-width:120px}.contact a{text-decoration:none;font-size:.88rem;font-weight:600;border:1px solid var(--line);border-radius:8px;padding:4px 9px;color:var(--ink)}
+#msgDlg textarea{min-height:200px;font-size:.92rem}
+.pl{font-size:.78rem;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.pl-gruen{background:var(--ok-bg);color:var(--ok)}.pl-orange{background:var(--fp-bg);color:var(--fp)}.pl-rot{background:var(--rot);color:#fff}
 /* Druck */
 #print{display:none}
 @media print{
@@ -242,6 +266,7 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
       <div><h1 id="clubName">DC Rot-Blau Wuppertal</h1><p>Vereins-App</p></div>
     </div>
     <nav class="tabs" id="tabs">
+      <button data-act="tab" data-tab="start">Start</button>
       <button data-act="tab" data-tab="termine">Termine</button>
       <button data-act="tab" data-tab="spieltag">Getränke</button>
       <button data-act="tab" data-tab="bestand">Bestand</button>
@@ -259,6 +284,7 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
 <div id="print"></div>
 <div class="toast" id="toast"></div>
 <dialog id="payDlg"></dialog>
+<dialog id="msgDlg"></dialog>
 <dialog id="impDlg"><h3>Stand laden</h3><p id="impInfo" class="small"></p>
   <p class="muted small"><b>Zusammenführen</b> ergänzt alles, was im geladenen Stand neu ist, und übernimmt dort gelöschte Einträge. Deine eigenen Einträge bleiben erhalten. <b>Ersetzen</b> verwirft deinen bisherigen Stand.</p>
   <div class="row"><button class="btn primary" data-imp="merge">Zusammenführen</button><button class="btn" data-imp="replace">Ersetzen</button><button class="btn ghost" data-imp="cancel">Abbrechen</button></div></dialog>
@@ -281,18 +307,18 @@ const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMo
 const nowLocal=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)};
 
 function blank(){return{app:'dartkasse',version:1,savedAt:null,
-  settings:{club:'DC Rot-Blau Wuppertal',prices:{bier:2,wasser:1.5,soft:1.5},fp:{bier:2,wasser:1.5,soft:1.5},startKasse:0,roster:[],pfandKasten:3,pfandFlasche:0.08},
-  logo:null,batches:[],matchdays:[],sales:[],moves:[],deleted:[],members:[],events:[],rsvps:[],posts:[],admin:{}}}
+  settings:{club:'DC Rot-Blau Wuppertal',prices:{bier:2,wasser:1.5,soft:1.5},fp:{bier:2,wasser:1.5,soft:1.5},startKasse:0,roster:[],pfandKasten:3,pfandFlasche:0.08,teamStart:0,playersMin:6,playersOk:8,lowStock:10,clubMail:''},
+  logo:null,batches:[],matchdays:[],sales:[],moves:[],deleted:[],members:[],events:[],rsvps:[],posts:[],admin:{},team:[]}}
 function normalize(d){const b=blank();d=d||{};
   const s=Object.assign({},b.settings,d.settings||{});
   s.prices=Object.assign({},b.settings.prices,(d.settings||{}).prices||{});
   s.fp=Object.assign({},b.settings.fp,(d.settings||{}).fp||{});
   s.roster=Array.isArray(s.roster)?s.roster:[];
-  return{...b,...d,app:'dartkasse',settings:s,batches:d.batches||[],matchdays:d.matchdays||[],sales:d.sales||[],moves:d.moves||[],deleted:d.deleted||[],members:d.members||[],events:d.events||[],rsvps:d.rsvps||[],posts:d.posts||[],admin:d.admin||{}}}
+  return{...b,...d,app:'dartkasse',settings:s,batches:d.batches||[],matchdays:d.matchdays||[],sales:d.sales||[],moves:d.moves||[],deleted:d.deleted||[],members:d.members||[],events:d.events||[],rsvps:d.rsvps||[],posts:d.posts||[],admin:d.admin||{},team:d.team||[]}}
 const hasData=d=>d&&(d.matchdays.length||d.batches.length||d.sales.length||d.moves.length||d.events.length||d.posts.length||d.members.length);
 
 let D=blank();
-let ui={tab:'termine',md:null,showNewMd:false,focus:null};
+let ui={tab:'start',md:null,showNewMd:false,focus:null};
 
 /* ===================== Berechnung (FIFO) ===================== */
 // Vereinsflaschen werden zuerst verkauft (ältester Einkauf zuerst).
@@ -408,14 +434,14 @@ function mergeData(a,b){
   b.matchdays.forEach(m=>{const e=ms.get(m.id);if(!e){a.matchdays.push(m);return}
     const ps=new Map(e.people.map(p=>[p.id,p]));
     m.people.forEach(p=>{const ep=ps.get(p.id);if(!ep)e.people.push(p);else if((p.paidTs||0)>(ep.paidTs||0)){ep.paid=p.paid;ep.tip=p.tip||0;ep.paidTs=p.paidTs}})});
-  ['sales','batches','moves'].forEach(k=>{const ids=new Set(a[k].map(x=>x.id));b[k].forEach(x=>{if(!ids.has(x.id))a[k].push(x)})});
+  ['sales','batches','moves','team'].forEach(k=>{const ids=new Set(a[k].map(x=>x.id));b[k].forEach(x=>{if(!ids.has(x.id))a[k].push(x)})});
   ['members','events','rsvps','posts'].forEach(k=>{const mp=new Map(a[k].map(x=>[x.id,x]));
     b[k].forEach(x=>{const e=mp.get(x.id);if(!e){a[k].push(x);mp.set(x.id,x)}else if((x.u||0)>(e.u||0)){Object.keys(e).forEach(q=>delete e[q]);Object.assign(e,x)}})});
   if((b.admin.u||0)>(a.admin.u||0))a.admin=b.admin;
   const del=new Set([...a.deleted,...b.deleted]);a.deleted=[...del];
   ['members','events','rsvps','posts'].forEach(k=>a[k]=a[k].filter(x=>!del.has(x.id)));
   a.matchdays=a.matchdays.filter(m=>!del.has(m.id));a.matchdays.forEach(m=>m.people=m.people.filter(p=>!del.has(p.id)));
-  ['sales','batches','moves'].forEach(k=>a[k]=a[k].filter(x=>!del.has(x.id)));
+  ['sales','batches','moves','team'].forEach(k=>a[k]=a[k].filter(x=>!del.has(x.id)));
   if((b.settingsTs||0)>(a.settingsTs||0)){a.settings=b.settings;a.logo=b.logo||null;a.settingsTs=b.settingsTs}
   a.savedAt=Math.max(a.savedAt||0,b.savedAt||0)||null;
   return a;
@@ -506,7 +532,7 @@ async function ghPut(d,sha){
   if(!r.ok)throw mkErr(r.status);return true
 }
 function canon(d){const byId=a=>[...a].sort((x,y)=>x.id<y.id?-1:x.id>y.id?1:0);
-  return JSON.stringify({s:d.settings,st:d.settingsTs||0,l:d.logo||null,m:byId(d.matchdays).map(m=>({...m,people:byId(m.people)})),sa:byId(d.sales),b:byId(d.batches),mv:byId(d.moves),del:[...d.deleted].sort(),me:byId(d.members),ev:byId(d.events),rs:byId(d.rsvps),po:byId(d.posts),ad:d.admin||{}})}
+  return JSON.stringify({s:d.settings,st:d.settingsTs||0,l:d.logo||null,m:byId(d.matchdays).map(m=>({...m,people:byId(m.people)})),sa:byId(d.sales),b:byId(d.batches),mv:byId(d.moves),del:[...d.deleted].sort(),me:byId(d.members),ev:byId(d.events),rs:byId(d.rsvps),po:byId(d.posts),ad:d.admin||{},tm:byId(d.team||[])})}
 async function syncNow(){
   if(!syncOn())return;
   if(syncBusy){syncAgain=true;return}
@@ -564,14 +590,15 @@ function render(){
   document.body.classList.toggle('locked',locked()||!meOk());
   if(locked()){app.innerHTML=vLocked();return}
   if(!meOk()){app.innerHTML=vWho();return}
-  app.innerHTML=(VIEWS[ui.tab]||vTermine)();
+  app.innerHTML=(VIEWS[ui.tab]||vStart)();
   const bf=document.getElementById('batchForm');if(bf)pfandCalc(bf,null);
   if(ui.focus){const el=document.getElementById(ui.focus);if(el)el.focus();ui.focus=null}
 }
 
+function bigLogo(){return`<img src="logo-full.png" alt="DC Rot-Blau Wuppertal" onerror="this.outerHTML=logoMarkup()">`}
 function vLocked(){
   const err=SY.revoked?`<p class="msg-err">${esc(SY.revoked)}</p>`:SY.blocked&&syncErr&&!ui.checking?`<p class="msg-err">${esc(syncErr)}</p>`:'';
-  return `<div class="lock"><div class="lock-logo">${logoMarkup()}</div>
+  return `<div class="lock"><div class="biglogo">${bigLogo()}</div>
     <h2>Keine Daten vorhanden</h2><p class="muted">Nur sichtbar mit aktuellem Token.</p>
     <form data-form="unlock" class="panel">
       <label class="f">Token<input type="password" name="token" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
@@ -723,7 +750,7 @@ function pfandCalc(f,target){
 ['input','change'].forEach(ev=>document.addEventListener(ev,e=>{const f=e.target.closest&&e.target.closest('#batchForm,#pfandForm');if(f)pfandCalc(f,e.target)}));
 function vKasse(){
   const T=totals();
-  let h=`<h2>Kasse</h2><div class="figs">
+  let h=`<div class="figs">
     <div class="fig cash"><div class="k">Kassenstand</div><div class="v">${eur(T.cash)}</div><div class="k">Bargeld, das jetzt in der Kasse sein sollte</div></div>
     <div class="fig fp"><div class="k">Davon gehört dem Fanprojekt</div><div class="v">${eur(T.fpDue)}</div><div class="k">${eur(T.fpEarned)} angefallen, ${eur(T.fpPaid)} ausgezahlt</div></div>
     <div class="fig"><div class="k">Offene Erstattungen</div><div class="v" style="color:${T.owed>0.004?'var(--rot)':'inherit'}">${eur(T.owed)}</div><div class="k">Vorkasse von Spielern, noch zurückzuzahlen</div></div>
@@ -742,7 +769,7 @@ function vKasse(){
     <div class="row"><button class="btn primary">Buchen</button>${T.fpDue>0.004?`<button type="button" class="btn ghost" data-act="fpFill" data-v="${T.fpDue.toFixed(2)}">Fanprojekt-Betrag einsetzen</button>`:''}</div></div></form>`;
   h+=`<div class="panel"><h3 style="margin-bottom:10px">Verkäufe gesamt</h3><div class="tablewrap"><table><thead><tr><th>Getränk</th><th class="r">Verkauft</th><th class="r">aus Vereinsbestand</th><th class="r">vom Fanprojekt</th><th class="r">Umsatz</th></tr></thead><tbody>
     ${CATS.map(c=>{const x=T.cat[c.k];return`<tr><td>${c.i} ${c.n}</td><td class="r">${x.n}</td><td class="r">${x.v}</td><td class="r">${x.f}</td><td class="r">${eur(x.u)}</td></tr>`}).join('')}</tbody></table></div></div>`;
-  const ML={fp:'Auszahlung Fanprojekt',ein:'Sonstige Einnahme',aus:'Sonstige Ausgabe',pfand:'Pfandrückgabe',erst:'Erstattung Vorkasse'};
+  const ML={fp:'Auszahlung Fanprojekt',ein:'Sonstige Einnahme',aus:'Sonstige Ausgabe',pfand:'Pfandrückgabe',erst:'Erstattung Vorkasse',trans:'Übertrag Mannschaftskasse'};
   const log=[...D.moves.map(m=>({ts:m.ts,t:ML[m.type]||m.type,amt:m.amt,note:m.note,id:m.id,del:true})),
     ...D.batches.filter(b=>payerKind(b)==='kasse').map(b=>({ts:b.ts,t:'Einkauf '+CATN[b.cat]+', '+packTxt(b),amt:-bTotal(b),note:(b.pfand?'inkl. '+eur(b.pfand)+' Pfand. ':'')+(b.note||'')})),
     ...D.matchdays.map(m=>{const pd=m.people.reduce((a,p)=>a+(p.paid||0),0),tp=m.people.reduce((a,p)=>a+(p.tip||0),0);
@@ -794,7 +821,12 @@ function vEinstellungen(){
   <div class="panel"><div class="grid2"><label class="f">Vereinsname<input type="text" data-change="set" data-path="club" value="${esc(s.club)}"></label>
     <label class="f">Startbestand der Kasse (€)<input type="text" inputmode="decimal" data-change="set" data-path="startKasse" value="${String(s.startKasse).replace('.',',')}"></label>
     <label class="f">Pfand je Kasten, leer (€)<input type="text" inputmode="decimal" data-change="set" data-path="pfandKasten" value="${String(s.pfandKasten).replace('.',',')}"></label>
-    <label class="f">Pfand je Flasche (€)<input type="text" inputmode="decimal" data-change="set" data-path="pfandFlasche" value="${String(s.pfandFlasche).replace('.',',')}"></label></div></div>
+    <label class="f">Pfand je Flasche (€)<input type="text" inputmode="decimal" data-change="set" data-path="pfandFlasche" value="${String(s.pfandFlasche).replace('.',',')}"></label>
+    <label class="f">Startbestand Mannschaftskasse (€)<input type="text" inputmode="decimal" data-change="set" data-path="teamStart" value="${String(s.teamStart||0).replace('.',',')}"></label>
+    <label class="f">Spieler: ab hier orange (knapp)<input type="text" inputmode="numeric" data-change="set" data-path="playersMin" value="${s.playersMin||6}"></label>
+    <label class="f">Spieler: ab hier grün (vollständig)<input type="text" inputmode="numeric" data-change="set" data-path="playersOk" value="${s.playersOk||8}"></label>
+    <label class="f">Bestandswarnung ab (Flaschen)<input type="text" inputmode="numeric" data-change="set" data-path="lowStock" value="${s.lowStock||10}"></label>
+    <label class="f">Vereins-E-Mail (Absender)<input type="email" data-change="setTxt" data-path="clubMail" value="${esc(s.clubMail||'')}" placeholder="z. B. rot-blau@gmx.de"></label></div></div>
   <div class="panel"><h3 style="margin-bottom:4px">Stammspieler</h3><p class="muted small" style="margin-top:0">Ein Name pro Zeile. Sie erscheinen am Spieltag als Schnellauswahl.</p>
     <textarea data-change="roster">${esc(s.roster.join('\n'))}</textarea></div>
   <div class="panel"><h3 style="margin-bottom:8px">Logo</h3><p class="muted small" style="margin-top:0">Lege das Vereinslogo als <b>logo.png</b> in denselben Ordner wie diese Datei, oder lade es hier hoch. Hochgeladene Logos werden in der Datendatei mitgespeichert.</p>
@@ -904,6 +936,7 @@ document.addEventListener('change',e=>{const el=e.target;const k=el.dataset.chan
   else if(k==='set'){const [a,b]=el.dataset.path.split('.');
     if(b)D.settings[a][b]=num(el.value);else D.settings[a]=a==='club'?el.value.trim()||'DC Rot-Blau Wuppertal':num(el.value);
     D.settingsTs=Date.now();save();if(a==='club')renderHeader();toast('Gespeichert')}
+  else if(k==='setTxt'){D.settings[el.dataset.path]=el.value.trim();D.settingsTs=Date.now();save();toast('Gespeichert')}
   else if(k==='roster'){D.settings.roster=el.value.split('\n').map(s=>s.trim()).filter(Boolean);D.settingsTs=Date.now();save();toast('Stammspieler gespeichert')}
 });
 document.getElementById('impFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)importJson(f);e.target.value=''});
@@ -916,7 +949,7 @@ window.addEventListener('beforeunload',e=>{if(fh&&fileState==='saving'){e.preven
 /* ===================== Vereins-App: Mitglieder, Termine, Allgemeines, Verwaltung ===================== */
 const ET={heim:'Heimspiel',auswaerts:'Auswärtsspiel',training:'Training',sitzung:'Teamsitzung',sonst:'Sonstiges'};
 const PC={sitzung:'Teamsitzung',info:'Info',sonst:'Sonstiges'};
-const VIEWS={termine:vTermine,spieltag:vSpieltag,bestand:vBestand,kasse:vKasse,infos:vInfos,einstellungen:vEinstellungen,admin:vAdmin};
+const VIEWS={start:vStart,termine:vTermine,spieltag:vSpieltag,bestand:vBestand,kasse:vKasseTab,infos:vInfos,einstellungen:vEinstellungen,admin:vAdmin};
 const me=()=>D.members.find(m=>m.id===SY.me);
 const meOk=()=>{const m=me();return!!m&&!m.blocked};
 const activeMembers=()=>D.members.filter(m=>!m.blocked).sort((a,b)=>a.name.localeCompare(b.name,'de'));
@@ -942,7 +975,7 @@ function createMember(name){
 function setMe(id){if(!id)return;SY.me=id;saveSyncCfg();const m=me();m.lastSeen=Date.now();m.tokenHint=tokenHint();touch(m);save();render();toast('Hallo '+m.name+'!')}
 function vWho(){
   const ms=activeMembers();const extra=D.settings.roster.filter(n=>!D.members.some(m=>m.name.toLowerCase()===n.toLowerCase()));
-  return`<div class="lock"><div class="lock-logo">${logoMarkup()}</div><h2>Wer bist du?</h2>
+  return`<div class="lock"><div class="biglogo">${bigLogo()}</div><h2>Wer bist du?</h2>
     <p class="muted">Damit die anderen sehen, wer zusagt, mitfährt oder etwas einträgt.</p>
     ${ms.length||extra.length?`<div class="chips" style="justify-content:center;margin:18px 0">${ms.map(m=>`<button class="chip all" data-act="pickMe" data-id="${m.id}">${esc(m.name)}</button>`).join('')}${extra.map(n=>`<button class="chip" data-act="pickMeName" data-name="${esc(n)}">${esc(n)}</button>`).join('')}</div>`:''}
     <form data-form="newMe" class="panel"><label class="f">${ms.length||extra.length?'Nicht in der Liste? Dein Name':'Dein Name'}<input type="text" name="n" required autocomplete="off" placeholder="z. B. Alex"></label><button class="btn primary">Das bin ich</button></form>
@@ -954,9 +987,19 @@ function expiryBanner(){const t=tokenExpiry();if(!t)return'';const n=daysLeft(t.
   return`<div class="banner">${n<0?'Der Zugang ist abgelaufen.':n===0?'Der Zugang läuft heute ab.':`Der Zugang läuft in ${n} ${n===1?'Tag':'Tagen'} ab, am ${esc(fmtDate(t.date))}.`} ${ui.adminOk?'Bitte bei GitHub einen neuen Token erzeugen und verteilen.':'Den neuen Token bekommst du von den Verantwortlichen.'}</div>`}
 function vProfile(){const t=tokenExpiry();const m=me();
   return`<div class="panel"><h3 style="margin-bottom:6px">Du</h3><p style="margin-top:0">Angemeldet als <b>${esc(m?m.name:'')}</b>. Token gültig bis: <b>${t?esc(fmtDate(t.date)):'unbekannt'}</b>${t&&daysLeft(t.date)<=14?' <span class="tag" style="background:var(--warn-bg);color:var(--rot)">läuft bald ab</span>':''}</p>
-    <div class="row"><button class="btn ghost" data-act="switchMe">Anderen Namen wählen</button><button class="btn" data-act="tab" data-tab="admin">Verwaltung (Admin)</button></div></div>`}
+    <form data-form="profile" style="margin-top:12px"><div class="grid2">
+      <label class="f">E-Mail-Adresse<input type="email" name="email" value="${esc(m&&m.email||'')}" autocomplete="email" placeholder="name@beispiel.de"></label>
+      <label class="f">Handynummer<input type="tel" name="phone" value="${esc(m&&m.phone||'')}" autocomplete="tel" placeholder="0171 1234567"></label></div>
+      <label class="check small"><input type="checkbox" name="mailOk" ${m&&m.mailOk?'checked':''}> Ich möchte Infos zu Terminen und Neuigkeiten per E-Mail bekommen.</label>
+      <p class="muted small">Freiwillig und jederzeit löschbar. Deine Angaben sind für alle Mitglieder mit Zugang zur App sichtbar, damit ihr euch z. B. für Fahrgemeinschaften erreicht.</p>
+      <div class="row"><button class="btn primary">Kontaktdaten speichern</button><button type="button" class="btn ghost" data-act="switchMe">Anderen Namen wählen</button><button type="button" class="btn" data-act="tab" data-tab="admin">Verwaltung (Admin)</button></div></form></div>
+  ${vContacts()}`}
 
 /* --- Termine --- */
+function pLimits(){const mn=Math.max(1,Math.round(num(D.settings.playersMin))||6);return{mn,ok:Math.max(mn,Math.round(num(D.settings.playersOk))||8)}}
+function pLevel(n){const L=pLimits();return n>=L.ok?'gruen':n>=L.mn?'orange':'rot'}
+const jaCount=e=>activeMembers().filter(x=>(rs(e.id,x.id)||{}).status==='ja').length;
+function pBadge(e){if(e.type!=='heim'&&e.type!=='auswaerts')return'';const n=jaCount(e),L=pLimits();return`<span class="pl pl-${pLevel(n)}" title="Ab ${L.mn} knapp, ab ${L.ok} vollständig">${n} / ${L.ok} Spieler</span>`}
 const evKey=e=>e.date+(e.time||'');
 const rs=(ev,m)=>D.rsvps.find(r=>r.id===ev+'~'+m);
 function setRs(evId,patch){const id=evId+'~'+SY.me;let r=D.rsvps.find(x=>x.id===id);if(!r){r={id,ev:evId,m:SY.me};D.rsvps.push(r)}Object.assign(r,patch);touch(r);save();render()}
@@ -996,12 +1039,12 @@ function vEvent(e){
   const mine=rs(e.id,SY.me)||{};const open=ui.openEv===e.id;const d=new Date(e.date+'T12:00');
   let h=`<article class="ev t-${e.type}"><div class="ev-head"><div class="datebox"><small>${d.toLocaleDateString('de-DE',{weekday:'short'})}</small><b>${d.getDate()}</b><small>${d.toLocaleDateString('de-DE',{month:'short'})}</small></div>
     <div style="flex:1;min-width:0"><span class="tag t-${e.type}">${ET[e.type]||'Termin'}</span><h3>${esc(e.title)}</h3><div class="meta">${[e.time?e.time+' Uhr':'',e.place].filter(Boolean).map(esc).join(', ')}${e.meet?`<br>Treffpunkt: ${esc(e.meet)}`:''}</div></div></div>
-    <div class="counts"><span class="ja">✓ ${by.ja.length} dabei</span><span class="vl">? ${by.vl.length} vielleicht</span><span class="nein">✗ ${by.nein.length} nicht dabei</span><span>${by.offen.length} ohne Antwort</span></div>`;
+    <div class="counts">${pBadge(e)}<span class="ja">✓ ${by.ja.length} dabei</span><span class="vl">? ${by.vl.length} vielleicht</span><span class="nein">✗ ${by.nein.length} nicht dabei</span><span>${by.offen.length} ohne Antwort</span></div>`;
   if(e.type==='auswaerts'){const T=travel(e);h+=`<div class="meta">🚗 ${T.cars.length} ${T.cars.length===1?'Auto':'Autos'}, ${T.free} ${T.free===1?'freier Platz':'freie Plätze'}${T.need.length?`, <b style="color:var(--rot)">${T.need.length} ${T.need.length===1?'sucht':'suchen'} eine Mitfahrgelegenheit</b>`:''}</div>`}
   h+=`<div class="rsvp">${[['ja','Dabei'],['vl','Vielleicht'],['nein','Nicht dabei']].map(([k,l])=>`<button class="${mine.status===k?'on '+k:''}" data-act="rsvp" data-ev="${e.id}" data-s="${k}">${l}</button>`).join('')}</div>`;
   if(ui.reason&&ui.reason.ev===e.id)h+=`<form class="reason" data-form="reason"><input type="text" name="r" id="reasonIn" placeholder="${ui.reason.s==='nein'?'Warum kannst du nicht? (Pflicht)':'Woran hängt es? (Pflicht)'}" value="${esc(mine.status===ui.reason.s?mine.reason||'':'')}" required autocomplete="off"><button class="btn primary">Speichern</button><button type="button" class="btn ghost" data-act="reasonCancel">Abbrechen</button></form>`;
   else if(mine.reason&&mine.status!=='ja')h+=`<div class="note">Deine Begründung: ${esc(mine.reason)}</div>`;
-  h+=`<div class="row" style="margin-top:10px"><button class="btn ghost" data-act="evOpen" data-ev="${e.id}">${open?'Weniger anzeigen':(e.type==='auswaerts'?'Teilnehmer und Fahrten':'Teilnehmer anzeigen')}</button><button class="btn ghost" data-act="ics" data-ev="${e.id}">📅 In Kalender</button>${e.type==='heim'||e.type==='training'?`<button class="btn blue" data-act="evKasse" data-ev="${e.id}">Getränke erfassen</button>`:''}</div>`;
+  h+=`<div class="row" style="margin-top:10px"><button class="btn ghost" data-act="evOpen" data-ev="${e.id}">${open?'Weniger anzeigen':(e.type==='auswaerts'?'Teilnehmer und Fahrten':'Teilnehmer anzeigen')}</button><button class="btn ghost" data-act="ics" data-ev="${e.id}">📅 In Kalender</button><button class="btn ghost" data-act="msgEv" data-ev="${e.id}">📣 Benachrichtigen</button>${e.type==='heim'||e.type==='training'?`<button class="btn blue" data-act="evKasse" data-ev="${e.id}">Getränke erfassen</button>`:''}</div>`;
   if(open){
     const L=(arr,r)=>arr.length?arr.map(x=>`<li>${esc(x.m.name)}${r&&x.r&&x.r.reason?` <span class="r">(${esc(x.r.reason)})</span>`:''}</li>`).join(''):'<li class="r">niemand</li>';
     h+=`<div class="evdetail">${e.note?`<p class="small" style="white-space:pre-wrap;margin-top:0">${esc(e.note)}</p>`:''}
@@ -1081,7 +1124,7 @@ function vInfos(){
   h+=ps.map(p=>`<article class="panel post"><div class="row" style="justify-content:space-between"><span class="tag ${p.cat==='sitzung'?'t-sitzung':''}">${PC[p.cat]||'Info'}</span><span class="muted small">${esc(fmtDate(p.date))}${p.by?', von '+esc(mName(p.by)):''}</span></div>
     <h3 style="margin:8px 0">${esc(p.title)}</h3>${p.text?`<div class="text">${esc(p.text)}</div>`:''}
     ${(p.files||[]).length?`<div class="files">${p.files.map((f,i)=>`<div class="file"><button class="btn ghost" data-act="fileOpen" data-p="${p.id}" data-i="${i}">📎 ${esc(f.n)}</button><span class="muted small">${fmtSize(f.size)}</span><button class="x" data-act="fileDel" data-p="${p.id}" data-i="${i}" title="Datei entfernen">×</button></div>`).join('')}</div>`:''}
-    <div class="row" style="margin-top:10px"><button class="btn ghost" data-act="postEdit" data-p="${p.id}">Bearbeiten</button><button class="btn danger" data-act="postDel" data-p="${p.id}">Löschen</button></div></article>`).join('');
+    <div class="row" style="margin-top:10px"><button class="btn ghost" data-act="msgPost" data-p="${p.id}">📣 Teilen</button><button class="btn ghost" data-act="postEdit" data-p="${p.id}">Bearbeiten</button><button class="btn danger" data-act="postDel" data-p="${p.id}">Löschen</button></div></article>`).join('');
   return h;
 }
 function vPostForm(){const isNew=ui.postForm==='new';const p=isNew?{cat:'sitzung',date:todayStr()}:(D.posts.find(x=>x.id===ui.postForm)||{});
@@ -1093,6 +1136,20 @@ function vPostForm(){const isNew=ui.postForm==='new';const p=isNew?{cat:'sitzung
     <label class="f" style="margin-top:12px">Dateien anhängen<input type="file" name="files" multiple></label>
     <p class="muted small">PDF, Fotos, Word, Excel und mehr, höchstens 25 MB je Datei. Zum Hochladen und Öffnen wird Internet benötigt.</p>
     <div class="row" style="margin-top:8px"><button class="btn primary">Speichern</button><button type="button" class="btn ghost" data-act="postCancel">Abbrechen</button></div></form>`}
+
+/* --- Automatische E-Mails (Einstellungen für das GitHub-Skript) --- */
+const MAILDEF={newEv:true,remind:true,days:2,short:true,token:true};
+const mailCfg=()=>Object.assign({},MAILDEF,(D.admin&&D.admin.mail)||{});
+function vMailAdmin(){const c=mailCfg();const rec=activeMembers().filter(m=>m.mailOk&&m.email).length;const L=pLimits();
+  const ck=(k,l)=>`<label class="check"><input type="checkbox" name="${k}" ${c[k]?'checked':''}> ${l}</label>`;
+  return`<form class="panel" data-form="admMail"><h3 style="margin-bottom:6px">Automatische E-Mails</h3>
+    <p class="small" style="margin-top:0">Verschickt werden sie über euer GMX-Postfach, ein Skript im Daten-Repository prüft das alle zwei Stunden. Derzeit haben <b>${rec}</b> ${rec===1?'Mitglied':'Mitglieder'} E-Mails aktiviert.</p>
+    ${ck('newEv','Neue Termine an alle melden')}
+    ${ck('remind','Erinnerung an alle, die noch nicht geantwortet haben')}
+    <label class="f" style="margin:4px 0 6px 26px;max-width:260px">Erinnern ab<select name="days">${[1,2,3,5,7].map(n=>`<option value="${n}" ${+c.days===n?'selected':''}>${n} ${n===1?'Tag':'Tagen'} vor dem Termin</option>`).join('')}</select></label>
+    ${ck('short',`Alle informieren, wenn kurz vor einem Spiel weniger als ${L.mn} Zusagen da sind`)}
+    ${ck('token','Mich 14, 7, 3 und 1 Tag vor Ablauf des Tokens erinnern')}
+    <div class="row" style="margin-top:12px"><button class="btn">Speichern</button></div></form>`}
 
 /* --- Verwaltung --- */
 async function pwHash(pw,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
@@ -1118,6 +1175,7 @@ function vAdmin(){
     <li><b>Sperren</b> tippen. Die App auf dem Gerät der Person sperrt sich beim nächsten Abgleich und löscht dort alle Daten. Für die meisten Fälle reicht das.</li>
     <li>Weil alle denselben Token nutzen, könnte sich die Person technisch mit einem anderen Namen neu anmelden. Für einen sicheren Ausschluss erzeugst du bei GitHub mit <b>Regenerate token</b> einen neuen Token und schickst ihn nur an die verbleibenden Mitglieder.</li>
     <li>Das neue Ablaufdatum oben eintragen.</li></ol></div>
+  ${vMailAdmin()}
   <form class="panel" data-form="admPw2" style="max-width:480px"><h3 style="margin-bottom:8px">Admin-Passwort ändern</h3><label class="f">Neues Passwort<input type="password" name="a" minlength="6" required autocomplete="new-password"></label><div class="row" style="margin-top:12px"><button class="btn">Ändern</button></div></form>`;
 }
 
@@ -1191,11 +1249,125 @@ Object.assign(forms,{
   admSet:async f=>{const a=f.elements.a.value,b=f.elements.b.value;if(a.length<6){toast('Mindestens 6 Zeichen.');return}if(a!==b){toast('Die Passwörter stimmen nicht überein.');return}
     const salt=uid()+uid();D.admin=touch({...D.admin,salt,hash:await pwHash(a,salt)});ui.adminOk=true;save();render();toast('Admin-Passwort festgelegt')},
   admLogin:async f=>{const A=D.admin||{};if(A.hash&&await pwHash(f.elements.a.value,A.salt)===A.hash){ui.adminOk=true;render()}else{toast('Falsches Passwort.');f.elements.a.value=''}},
+  admMail:f=>{const F=f.elements;D.admin=touch({...D.admin,mail:{newEv:F.newEv.checked,remind:F.remind.checked,days:+F.days.value,short:F.short.checked,token:F.token.checked}});save();render();toast('Gespeichert')},
   admExp:f=>{D.admin=touch({...D.admin,tokenExpiry:f.elements.d.value});save();render();toast('Ablaufdatum gespeichert')},
   admPw2:async f=>{const a=f.elements.a.value;if(a.length<6){toast('Mindestens 6 Zeichen.');return}const salt=uid()+uid();D.admin=touch({...D.admin,salt,hash:await pwHash(a,salt)});save();render();toast('Passwort geändert')}
 });
 
 document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('form.travel select[name=mode]')){const b=e.target.form.querySelector('.seatsBox');if(b)b.style.display=e.target.value==='fahrer'?'':'none'}});
+/* --- Kontakte & Nachrichten --- */
+function waNum(t){let d=String(t||'').replace(/[^\d+]/g,'');if(d.startsWith('+'))d=d.slice(1);else if(d.startsWith('00'))d=d.slice(2);else if(d.startsWith('0'))d='49'+d.slice(1);return d}
+function vContacts(){const ms=activeMembers().filter(m=>m.email||m.phone);if(!ms.length)return'';
+  return`<div class="panel"><h3 style="margin-bottom:6px">Kontakte</h3>${ms.map(m=>`<div class="contact"><b>${esc(m.name)}</b>${m.phone?`<a href="tel:${esc(m.phone.replace(/\s/g,''))}">📞 Anrufen</a><a href="https://wa.me/${waNum(m.phone)}" target="_blank" rel="noopener">💬 WhatsApp</a>`:''}${m.email?`<a href="mailto:${esc(m.email)}">✉️ E-Mail</a>`:''}</div>`).join('')}</div>`}
+const appUrl=()=>location.origin+location.pathname;
+function evText(e){const d=new Date(e.date+'T12:00');const by={ja:0,vl:0,nein:0,offen:0};activeMembers().forEach(m=>{const r=rs(e.id,m.id);by[r&&r.status?r.status:'offen']++});
+  let t=`📅 ${ET[e.type]}: ${e.title}\n${d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'})}${e.time?', '+e.time+' Uhr':''}`;
+  if(e.place)t+=`\n📍 ${e.place}`;if(e.meet)t+=`\nTreffpunkt: ${e.meet}`;if(e.note)t+=`\n\n${e.note}`;
+  t+=`\n\nBisher: ${by.ja} dabei, ${by.vl} vielleicht, ${by.nein} nicht dabei, ${by.offen} ohne Antwort.`;
+  if(e.type==='auswaerts'){const T=travel(e);t+=`\n🚗 ${T.cars.length} ${T.cars.length===1?'Auto':'Autos'}, ${T.free} freie Plätze`+(T.need.length?`, ${T.need.length} ${T.need.length===1?'sucht':'suchen'} noch eine Mitfahrgelegenheit`:'')+'.'}
+  return t+`\n\nBitte in der App zu- oder absagen: ${appUrl()}`}
+let msgCtx=null;
+function openMsg(subject,text,groups){msgCtx={subject,groups};const dlg=document.getElementById('msgDlg');
+  dlg.innerHTML=`<h3>Nachricht senden</h3><label class="f">Text (kannst du anpassen)<textarea id="msgText">${esc(text)}</textarea></label>
+    <div class="row" style="margin-top:12px"><button type="button" class="btn primary" data-msg="wa">💬 WhatsApp</button>${navigator.share?'<button type="button" class="btn" data-msg="share">Teilen …</button>':''}</div>
+    <div class="row" style="margin-top:8px">${groups.map((g,i)=>`<button type="button" class="btn ghost" data-msg="mail" data-i="${i}" ${g.mails.length?'':'disabled'}>✉️ ${esc(g.label)} (${g.mails.length})</button>`).join('')}</div>
+    <p class="muted small">E-Mails gehen nur an Mitglieder, die in ihrem Profil zugestimmt haben, und zwar als Blindkopie. Dein Mailprogramm öffnet sich mit allem vorbereitet, du musst nur noch senden. Bei WhatsApp wählst du die Mannschaftsgruppe selbst aus.</p>
+    <div class="row"><button type="button" class="btn ghost" data-msg="close">Schließen</button></div>`;dlg.showModal()}
+document.getElementById('msgDlg').addEventListener('click',e=>{const b=e.target.closest('[data-msg]');if(!b||!msgCtx)return;const dlg=document.getElementById('msgDlg');const t=document.getElementById('msgText').value;
+  if(b.dataset.msg==='wa')window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');
+  else if(b.dataset.msg==='share')navigator.share({text:t}).catch(()=>{});
+  else if(b.dataset.msg==='mail'){const g=msgCtx.groups[+b.dataset.i];location.href='mailto:'+encodeURIComponent(D.settings.clubMail||'')+'?bcc='+g.mails.map(encodeURIComponent).join(',')+'&subject='+encodeURIComponent(msgCtx.subject)+'&body='+encodeURIComponent(t)}
+  else{msgCtx=null;dlg.close()}});
+const mailsOf=ms=>ms.filter(m=>m.mailOk&&m.email).map(m=>m.email.trim());
+
+/* --- Mannschaftskasse --- */
+const TCAT={beitrag:'Mitgliedsbeitrag',start:'Startgeld, Ligagebühr',strafe:'Strafe',spende:'Spende',anschaffung:'Anschaffung',feier:'Feier, Ausflug',sonst:'Sonstiges'};
+function teamTotal(){return num(D.settings.teamStart)+D.team.reduce((a,x)=>a+x.amt,0)}
+function vKasseTab(){return`<div class="seg"><button class="${ui.kv!=='team'?'on':''}" data-act="kv" data-k="getr">Getränkekasse</button><button class="${ui.kv==='team'?'on':''}" data-act="kv" data-k="team">Mannschaftskasse</button></div>`+(ui.kv==='team'?vTeam2():vKasse())}
+function vTeam2(){const T=totals();const free=T.cash-T.fpDue-T.owed;const tt=teamTotal();
+  let h=`<div class="figs"><div class="fig cash"><div class="k">Mannschaftskasse</div><div class="v">${eur(tt)}</div><div class="k">Beiträge, Strafen, Spenden und Ausgaben</div></div>
+    <div class="fig"><div class="k">Getränkekasse, frei verfügbar</div><div class="v">${eur(free)}</div><div class="k">Kassenstand ohne Fanprojekt-Anteil und offene Erstattungen</div></div>
+    <div class="fig" style="border-color:var(--blau)"><div class="k">Gesamt für die Mannschaft</div><div class="v" style="color:var(--blau)">${eur(tt+free)}</div><div class="k">Mannschaftskasse plus freie Getränkekasse</div></div></div>`;
+  h+=`<form class="panel" data-form="team"><h3 style="margin-bottom:10px">Buchen</h3><div class="grid2">
+    <label class="f">Art<select name="dir"><option value="ein">Einnahme</option><option value="aus">Ausgabe</option></select></label>
+    <label class="f">Kategorie<select name="cat">${Object.entries(TCAT).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
+    <label class="f">Betrag (€)<input type="text" inputmode="decimal" name="amt" placeholder="0,00" required></label>
+    <label class="f">Datum<input type="date" name="date" value="${todayStr()}"></label>
+    <label class="f">Wer, wofür? (Pflicht)<input type="text" name="note" placeholder="z. B. Beitrag Oktober Tom"></label></div>
+    <div class="row" style="margin-top:12px"><button class="btn primary">Buchen</button></div></form>`;
+  h+=`<form class="panel" data-form="trans"><h3 style="margin-bottom:6px">Geld zwischen den Kassen umbuchen</h3><p class="muted small" style="margin-top:0">Zum Beispiel den Überschuss der Getränkekasse in die Mannschaftskasse übernehmen.</p><div class="grid2">
+    <label class="f">Richtung<select name="dir"><option value="in">Getränkekasse → Mannschaftskasse</option><option value="out">Mannschaftskasse → Getränkekasse</option></select></label>
+    <label class="f">Betrag (€)<input type="text" inputmode="decimal" name="amt" placeholder="0,00" required></label>
+    <div class="row"><button class="btn blue">Umbuchen</button>${free>0.004?`<button type="button" class="btn ghost" data-act="transFill" data-v="${free.toFixed(2)}">Freien Betrag einsetzen</button>`:''}</div></div></form>`;
+  const L=[...D.team].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.ts-a.ts);
+  h+=`<div class="panel"><h3 style="margin-bottom:10px">Buchungen</h3>${L.length?`<div class="tablewrap"><table><thead><tr><th>Datum</th><th>Kategorie</th><th>Notiz</th><th class="r">Betrag</th><th></th></tr></thead><tbody>
+    ${L.map(x=>`<tr><td>${esc(fmtDate(x.date))}</td><td>${x.cat==='trans'?'Umbuchung':TCAT[x.cat]||''}</td><td>${esc(x.note||'')}</td><td class="r" style="color:${x.amt<0?'var(--rot)':'var(--ok)'}">${eur(x.amt)}</td><td class="r">${x.cat==='trans'?'':`<button class="x" data-act="delTeam" data-id="${x.id}" title="Buchung löschen">×</button>`}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">Noch keine Buchungen.</p>'}
+    <p class="muted small">Startbestand: ${eur(num(D.settings.teamStart))} (änderbar unter Einstellungen). Umbuchungen löschst du in der Getränkekasse im Kassenbuch, dann verschwinden beide Seiten.</p></div>`;
+  return h}
+
+/* --- Start / Dashboard --- */
+function vStart(){
+  const m=me();const T=totals();const t=todayStr();const lim=new Date();lim.setDate(lim.getDate()+14);
+  const limS=lim.getFullYear()+'-'+String(lim.getMonth()+1).padStart(2,'0')+'-'+String(lim.getDate()).padStart(2,'0');
+  const next=D.events.filter(e=>e.date>=t&&e.date<=limS).sort((a,b)=>evKey(a).localeCompare(evKey(b)));
+  const W=[];const PL=pLimits();
+  const tx=tokenExpiry();if(tx&&daysLeft(tx.date)<=14)W.push({ic:'🔑',hi:1,t:`<b>Zugang läuft ${daysLeft(tx.date)<0?'ist abgelaufen':daysLeft(tx.date)===0?'heute ab':'in '+daysLeft(tx.date)+' Tagen ab'}</b> (${esc(fmtDate(tx.date))}).`});
+  next.forEach(e=>{const r=rs(e.id,SY.me);const ja=activeMembers().filter(x=>(rs(e.id,x.id)||{}).status==='ja').length;
+    if(!r||!r.status)W.push({ic:'❓',hi:1,t:`<b>Du hast noch nicht geantwortet:</b> ${ET[e.type]} ${esc(e.title)}, ${esc(fmtDate(e.date))}.`,b:`<button class="btn primary" data-act="goEv" data-ev="${e.id}">Antworten</button>`});
+    if((e.type==='heim'||e.type==='auswaerts')&&ja<PL.ok){const red=ja<PL.mn;W.push({ic:red?'🔴':'🟠',hi:red?1:0,
+      t:red?`<b>Nur ${ja} ${ja===1?'Zusage':'Zusagen'}</b> für ${esc(e.title)} am ${esc(fmtDate(e.date))}. Mindestens ${PL.mn} werden gebraucht, besser ${PL.ok}.`:`<b style="color:var(--fp)">${ja} Zusagen</b> für ${esc(e.title)} am ${esc(fmtDate(e.date))}. Für eine volle Mannschaft fehlen noch ${PL.ok-ja}.`,
+      b:`<button class="btn ghost" data-act="msgEv" data-ev="${e.id}">Erinnern</button>`})}
+    if(e.type==='auswaerts'){const tr=travel(e);if(tr.need.length)W.push({ic:'🚗',hi:1,t:`<b>${tr.need.length} ${tr.need.length===1?'sucht':'suchen'} eine Mitfahrgelegenheit</b> nach ${esc(e.title)}${tr.free?`, ${tr.free} Plätze sind noch frei`:''}.`,b:`<button class="btn ghost" data-act="goEv" data-ev="${e.id}">Fahrten</button>`})}});
+  const low=Math.round(num(D.settings.lowStock))||10;const hasB=D.batches.some(b=>b.cat==='bier');
+  if(hasB&&T.stock.bier<low)W.push({ic:'🍺',hi:T.stock.bier===0?1:0,t:T.stock.bier===0?'<b>Kein Bier mehr im Vereinsbestand.</b> Alles weitere geht an das Fanprojekt.':`<b>Nur noch ${T.stock.bier} Bier</b> im Vereinsbestand.`,b:`<button class="btn ghost" data-act="tab" data-tab="bestand">Einkauf</button>`});
+  if(T.open>0.004)W.push({ic:'💶',t:`<b>${eur(T.open)}</b> für Getränke sind noch nicht kassiert.`,b:`<button class="btn ghost" data-act="tab" data-tab="spieltag">Ansehen</button>`});
+  if(T.owed>0.004)W.push({ic:'🤝',t:`<b>${eur(T.owed)}</b> Vorkasse muss noch an Spieler erstattet werden.`,b:`<button class="btn ghost" data-act="tab" data-tab="kasse">Erstatten</button>`});
+  if(T.fpDue>0.004)W.push({ic:'🏠',t:`<b>${eur(T.fpDue)}</b> in der Kasse gehören dem Fanprojekt.`});
+  if(T.pfandBal>=15)W.push({ic:'♻️',t:`Leergut im Wert von <b>${eur(T.pfandBal)}</b> wartet auf die Rückgabe.`});
+  if(m&&!m.email&&!m.phone)W.push({ic:'📇',t:'Hinterlege deine Kontaktdaten, damit dich die anderen erreichen.',b:`<button class="btn ghost" data-act="tab" data-tab="einstellungen">Profil</button>`});
+  const free=T.cash-T.fpDue-T.owed;const posts=[...D.posts].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.created-a.created).slice(0,2);
+  const d=new Date();
+  let h=`<div class="hero"><div class="hl">${bigLogo()}</div><div><h2>Hallo ${esc(m?m.name:'')}!</h2><p>${d.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}. ${next.length?`In den nächsten 14 Tagen ${next.length===1?'steht 1 Termin':'stehen '+next.length+' Termine'} an.`:'In den nächsten 14 Tagen steht nichts an.'}</p></div></div>
+  <div class="dgrid"><div>
+    ${W.length?`<div class="panel"><h3 style="margin-bottom:4px">Hinweise</h3>${W.map(w=>`<div class="warn ${w.hi?'hi':''}"><span class="ic">${w.ic}</span><span class="tx">${w.t}</span>${w.b||''}</div>`).join('')}</div>`:`<div class="panel"><h3 style="margin-bottom:4px">Hinweise</h3><p class="muted" style="margin:6px 0 0">Alles erledigt. Keine offenen Punkte.</p></div>`}
+    <div class="panel"><div class="row" style="justify-content:space-between;margin-bottom:4px"><h3>Die nächsten 14 Tage</h3><button class="btn ghost" data-act="tab" data-tab="termine">Alle Termine</button></div>
+      ${next.length?next.map(e=>{const r=rs(e.id,SY.me)||{};const dd=new Date(e.date+'T12:00');const ja=activeMembers().filter(x=>(rs(e.id,x.id)||{}).status==='ja').length;
+        const st=r.status||'offen';return`<div class="mini" data-act="goEv" data-ev="${e.id}"><div class="datebox"><small>${dd.toLocaleDateString('de-DE',{weekday:'short'})}</small><b>${dd.getDate()}</b><small>${dd.toLocaleDateString('de-DE',{month:'short'})}</small></div>
+        <div class="tx"><span class="tag t-${e.type}">${ET[e.type]}</span> ${pBadge(e)}<b>${esc(e.title)}</b><span class="meta">${e.time?e.time+' Uhr, ':''}${ja} ${ja===1?'Zusage':'Zusagen'}</span></div><span class="mystat ${st}">${{ja:'Dabei',vl:'Vielleicht',nein:'Nicht dabei',offen:'Antworten!'}[st]}</span></div>`}).join(''):'<p class="muted" style="margin:6px 0 0">Keine Termine. Lege unter „Termine“ neue an.</p>'}</div>
+  </div><div>
+    <div class="panel"><h3 style="margin-bottom:10px">Kassen</h3><div class="kgrid">
+      <div class="fig"><div class="k">Getränkekasse</div><div class="v">${eur(T.cash)}</div></div>
+      <div class="fig fp"><div class="k">davon Fanprojekt</div><div class="v">${eur(T.fpDue)}</div></div>
+      <div class="fig"><div class="k">Mannschaftskasse</div><div class="v">${eur(teamTotal())}</div></div>
+      <div class="fig" style="border-color:var(--blau)"><div class="k">Gesamt Mannschaft</div><div class="v" style="color:var(--blau)">${eur(teamTotal()+free)}</div></div></div></div>
+    <div class="wsv"><h3>⚽ Wuppertaler SV</h3><p>Oberliga Niederrhein: Spielplan und Liveticker vom Stadion am Zoo.</p>
+      <div class="row"><a class="btn" href="https://www.rot-blau.com/index.php?open=liveticker-wuppertaler-sv" target="_blank" rel="noopener">Liveticker</a><a class="btn" href="https://www.rot-blau.com/index.php?open=oberliga-niederrhein-spielplan" target="_blank" rel="noopener">Spielplan</a></div></div>
+    ${posts.length?`<div class="panel" style="margin-top:18px"><div class="row" style="justify-content:space-between;margin-bottom:4px"><h3>Neues</h3><button class="btn ghost" data-act="tab" data-tab="infos">Alles</button></div>${posts.map(p=>`<div class="mini" data-act="tab" data-tab="infos"><div class="tx"><b>${esc(p.title)}</b><span class="meta">${esc(fmtDate(p.date))}${(p.files||[]).length?', 📎 '+p.files.length:''}</span></div></div>`).join('')}</div>`:''}
+  </div></div>`;
+  return h}
+
+Object.assign(act,{
+  kv:el=>{ui.kv=el.dataset.k;render()},
+  goEv:el=>{ui.tab='termine';ui.openEv=el.dataset.ev;render();setTimeout(()=>{const a=document.querySelector(`[data-act=evOpen][data-ev="${el.dataset.ev}"]`);if(a)a.closest('.ev').scrollIntoView({behavior:'smooth',block:'start'})},50)},
+  msgEv:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);if(!e)return;const ms=activeMembers();
+    openMsg(`${ET[e.type]}: ${e.title}, ${fmtDate(e.date)}`,evText(e),[{label:'E-Mail an alle',mails:mailsOf(ms)},{label:'Nur an ohne Antwort',mails:mailsOf(ms.filter(m=>!(rs(e.id,m.id)||{}).status))}])},
+  msgPost:el=>{const p=D.posts.find(x=>x.id===el.dataset.p);if(!p)return;
+    openMsg(`${PC[p.cat]||'Info'}: ${p.title}`,`${PC[p.cat]||'Info'}: ${p.title} (${fmtDate(p.date)})\n\n${p.text||''}${(p.files||[]).length?`\n\n📎 ${p.files.length} ${p.files.length===1?'Datei':'Dateien'} in der App unter „Allgemeines“.`:''}\n\n${appUrl()}`,[{label:'E-Mail an alle',mails:mailsOf(activeMembers())}])},
+  transFill:el=>{const i=document.querySelector('form[data-form=trans] [name=amt]');if(i)i.value=String(el.dataset.v).replace('.',',')},
+  delTeam:el=>{if(!confirm('Buchung löschen?'))return;tomb(el.dataset.id);D.team=D.team.filter(x=>x.id!==el.dataset.id);save();render()}
+});
+// Löschen einer Umbuchung in der Getränkekasse entfernt auch die Gegenbuchung
+const _delMove=act.delMove;act.delMove=el=>{const mv=D.moves.find(m=>m.id===el.dataset.id);if(mv&&mv.type==='trans'){if(!confirm('Umbuchung auf beiden Seiten löschen?'))return;const tw=D.team.find(x=>x.link===mv.id);tomb(mv.id);D.moves=D.moves.filter(m=>m!==mv);if(tw){tomb(tw.id);D.team=D.team.filter(x=>x!==tw)}save();render();return}_delMove(el)};
+Object.assign(forms,{
+  profile:f=>{const m=me();if(!m)return;const F=f.elements;const em=F.email.value.trim();if(em&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Bitte eine gültige E-Mail-Adresse eingeben.');return}
+    m.email=em;m.phone=F.phone.value.trim();m.mailOk=F.mailOk.checked&&!!em;touch(m);save();render();toast('Kontaktdaten gespeichert')},
+  team:f=>{const F=f.elements;const a=Math.abs(num(F.amt.value));if(!a){toast('Bitte einen Betrag eingeben.');return}if(!F.note.value.trim()){toast('Bitte kurz angeben, wer oder wofür.');return}
+    D.team.push({id:uid(),ts:Date.now(),date:F.date.value||todayStr(),cat:F.cat.value,amt:F.dir.value==='aus'?-a:a,note:F.note.value.trim(),by:SY.me});save();render();toast('Gebucht')},
+  trans:f=>{const F=f.elements;const a=Math.abs(num(F.amt.value));if(!a){toast('Bitte einen Betrag eingeben.');return}const into=F.dir.value==='in';
+    const mid=uid();D.moves.push({id:mid,ts:Date.now(),type:'trans',amt:into?-a:a,note:into?'in die Mannschaftskasse':'aus der Mannschaftskasse'});
+    D.team.push({id:uid(),ts:Date.now(),date:todayStr(),cat:'trans',amt:into?a:-a,note:into?'aus der Getränkekasse':'in die Getränkekasse',link:mid,by:SY.me});save();render();toast('Umgebucht')}
+});
+
 /* ===================== Start ===================== */
 (async function init(){
   try{const raw=localStorage.getItem(LS_KEY);if(raw)D=normalize(JSON.parse(raw))}catch(e){}
