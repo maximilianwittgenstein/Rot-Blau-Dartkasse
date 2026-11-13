@@ -162,6 +162,20 @@ dialog{border:0;border-radius:16px;padding:20px;max-width:440px;width:calc(100% 
 dialog::backdrop{background:rgba(14,28,56,.55)}
 dialog h3{margin-bottom:8px}
 dialog .row{margin-top:14px}
+body.locked nav.tabs, body.locked [data-act=share]{display:none}
+.lock{max-width:440px;margin:40px auto;text-align:center}
+.lock .lock-logo{width:110px;height:110px;margin:0 auto 18px;border-radius:50%;overflow:hidden;background:#fff;display:grid;place-items:center}
+.lock .lock-logo img,.lock .lock-logo svg{width:100%;height:100%;object-fit:contain}
+.lock h2{font-size:1.6rem;margin-bottom:4px}
+.lock form{text-align:left;margin-top:22px}
+.lock input[type=password]{width:100%}
+.lock details{margin-top:10px;font-size:.9rem;color:var(--muted)}
+.lock details .grid2{margin-top:8px}
+.lock .btn{width:100%;margin-top:12px;padding:12px}
+.msg-err{color:var(--rot);font-size:.9rem;margin-top:10px}
+.vs.solo{grid-template-columns:1fr}
+.vs.solo .home{background:linear-gradient(100deg,var(--rot) 0 55%,var(--blau) 55%)}
+.teams.solo{grid-template-columns:1fr}
 /* Druck */
 #print{display:none}
 @media print{
@@ -254,7 +268,9 @@ function compute(){
   D.batches.forEach(b=>{rem[b.id]=b.qty;cpu[b.id]=b.qty?b.cost/b.qty:0});
   const byCat={};CATS.forEach(c=>byCat[c.k]=D.batches.filter(b=>b.cat===c.k).sort((a,b)=>a.ts-b.ts));
   const alloc={};
+  const train=new Set(D.matchdays.filter(m=>m.type==='training').map(m=>m.id));
   [...D.sales].sort((a,b)=>a.ts-b.ts).forEach(s=>{
+    if(train.has(s.md)){alloc[s.id]={v:0,vc:0,f:s.qty};return}
     let q=s.qty,v=0,vc=0;
     for(const b of byCat[s.cat]||[]){if(q<=0||b.ts>s.ts)break;const t=Math.min(q,rem[b.id]);if(t>0){rem[b.id]-=t;q-=t;v+=t;vc+=t*cpu[b.id]}}
     alloc[s.id]={v,vc,f:q};
@@ -297,6 +313,7 @@ async function writeFile(){
 function status(){
   const dot=document.getElementById('fileDot'),t=document.getElementById('fileText');
   dot.className='dot';
+  if(typeof locked==='function'&&locked()){t.textContent=syncOn()?'Token prüfen':'Kein Token';return}
   if(typeof syncOn==='function'&&syncOn()){
     const tm=lastSync?new Date(lastSync).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'';
     if(syncState==='err'){dot.classList.add('err');t.textContent='Abgleich-Fehler'}
@@ -389,23 +406,25 @@ let SY={owner:ghOwnerGuess,repo:'Rot-Blau-Dartkasse-Daten',path:'kasse.json',bra
 try{Object.assign(SY,JSON.parse(localStorage.getItem(SYNC_KEY)||'{}'))}catch(e){}
 let syncState='off',syncErr='',syncTimer=null,syncBusy=false,syncAgain=false,lastSync=null,deferRender=false;
 function syncOn(){return!!(SY.token&&SY.owner&&SY.repo)}
+function locked(){return!syncOn()||!!SY.blocked}
 function saveSyncCfg(){try{localStorage.setItem(SYNC_KEY,JSON.stringify(SY))}catch(e){}}
 const b64e=str=>{const by=new TextEncoder().encode(str);let bin='';for(let i=0;i<by.length;i+=0x8000)bin+=String.fromCharCode.apply(null,by.subarray(i,i+0x8000));return btoa(bin)};
 const b64d=b=>new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g,'')),c=>c.charCodeAt(0)));
 const ghRepoUrl=()=>`https://api.github.com/repos/${encodeURIComponent(SY.owner.trim())}/${encodeURIComponent(SY.repo.trim())}`;
 const ghUrl=()=>ghRepoUrl()+'/contents/'+SY.path.split('/').map(encodeURIComponent).join('/');
 const ghH=(acc)=>({'Authorization':'Bearer '+SY.token.trim(),'Accept':acc||'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'});
+function mkErr(st){const e=new Error(ghErr(st));e.auth=(st===401||st===403);return e}
 function ghErr(st){if(st===401)return'Der Token ist ungültig oder abgelaufen.';if(st===403)return'Der Token darf dieses Repository nicht beschreiben. Prüfe die Berechtigung „Contents: Read and write“.';return'GitHub antwortet mit Fehler '+st+'.'}
 async function ghGet(){
   const q='?ref='+encodeURIComponent(SY.branch)+'&t='+Date.now();
   const r=await fetch(ghUrl()+q,{headers:ghH(),cache:'no-store'});
   if(r.status===404){const rr=await fetch(ghRepoUrl()+'?t='+Date.now(),{headers:ghH(),cache:'no-store'});
-    if(rr.status===404)throw new Error('Das Daten-Repository „'+SY.owner+'/'+SY.repo+'“ wurde nicht gefunden, oder der Token hat keinen Zugriff darauf.');
-    if(!rr.ok)throw new Error(ghErr(rr.status));return{data:null,sha:null}}
-  if(!r.ok)throw new Error(ghErr(r.status));
+    if(rr.status===404){const e=new Error('Das Daten-Repository „'+SY.owner+'/'+SY.repo+'“ wurde nicht gefunden, oder der Token hat keinen Zugriff darauf.');e.auth=true;throw e}
+    if(!rr.ok)throw mkErr(rr.status);return{data:null,sha:null}}
+  if(!r.ok)throw mkErr(r.status);
   const j=await r.json();let txt;
   if(j.content&&j.encoding==='base64')txt=b64d(j.content);
-  else{const rr=await fetch(ghUrl()+q,{headers:ghH('application/vnd.github.raw+json'),cache:'no-store'});if(!rr.ok)throw new Error(ghErr(rr.status));txt=await rr.text()}
+  else{const rr=await fetch(ghUrl()+q,{headers:ghH('application/vnd.github.raw+json'),cache:'no-store'});if(!rr.ok)throw mkErr(rr.status);txt=await rr.text()}
   let d;try{d=JSON.parse(txt)}catch(e){throw new Error('Die Datei '+SY.path+' im Daten-Repository ist beschädigt.')}
   return{data:normalize(d),sha:j.sha}
 }
@@ -413,14 +432,14 @@ async function ghPut(d,sha){
   const body={message:'Kassenstand '+fmtTs(Date.now()),content:b64e(JSON.stringify(d,null,1)),branch:SY.branch};if(sha)body.sha=sha;
   const r=await fetch(ghUrl(),{method:'PUT',headers:{...ghH(),'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(r.status===409||r.status===422)return false; // jemand anderes hat gerade gespeichert: neu laden und erneut zusammenführen
-  if(!r.ok)throw new Error(ghErr(r.status));return true
+  if(!r.ok)throw mkErr(r.status);return true
 }
 function canon(d){const byId=a=>[...a].sort((x,y)=>x.id<y.id?-1:x.id>y.id?1:0);
   return JSON.stringify({s:d.settings,st:d.settingsTs||0,l:d.logo||null,m:byId(d.matchdays).map(m=>({...m,people:byId(m.people)})),sa:byId(d.sales),b:byId(d.batches),mv:byId(d.moves),del:[...d.deleted].sort()})}
 async function syncNow(){
   if(!syncOn())return;
   if(syncBusy){syncAgain=true;return}
-  if(!navigator.onLine){syncState='offline';status();return}
+  if(!navigator.onLine){syncState='offline';if(SY.blocked){ui.checking=false;syncErr='Keine Internetverbindung. Zum Freischalten wird Internet benötigt.';render()}status();return}
   clearTimeout(syncTimer);syncBusy=true;syncState='busy';status();
   try{
     let done=false;
@@ -436,7 +455,10 @@ async function syncNow(){
     }
     if(!done)throw new Error('Mehrere Geräte speichern gerade gleichzeitig. Bitte gleich noch einmal abgleichen.');
     syncState='ok';syncErr='';lastSync=Date.now();
-  }catch(e){syncState=navigator.onLine?'err':'offline';syncErr=navigator.onLine?(e.message||String(e)):''}
+    if(SY.blocked){SY.blocked=false;saveSyncCfg();ui.checking=false;renderHeader();render()}
+  }catch(e){syncState=navigator.onLine?'err':'offline';syncErr=navigator.onLine?(e.message||String(e)):'Keine Internetverbindung. Zum Freischalten wird Internet benötigt.';
+    if(e.auth&&!SY.blocked){SY.blocked=true;saveSyncCfg()}
+    if(SY.blocked){ui.checking=false;render()}}
   syncBusy=false;status();if(ui.tab==='einstellungen')softRender();
   if(syncAgain){syncAgain=false;syncNow()}
 }
@@ -467,33 +489,57 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function render(){
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
   const app=document.getElementById('app');
+  document.body.classList.toggle('locked',locked());
+  if(locked()){app.innerHTML=vLocked();return}
   app.innerHTML={spieltag:vSpieltag,bestand:vBestand,kasse:vKasse,einstellungen:vEinstellungen}[ui.tab]();
   if(ui.focus){const el=document.getElementById(ui.focus);if(el)el.focus();ui.focus=null}
 }
 
+function vLocked(){
+  const err=SY.blocked&&syncErr&&!ui.checking?`<p class="msg-err">${esc(syncErr)}</p>`:'';
+  return `<div class="lock"><div class="lock-logo">${logoMarkup()}</div>
+    <h2>Keine Daten vorhanden</h2><p class="muted">Nur sichtbar mit aktuellem Token.</p>
+    <form data-form="unlock" class="panel">
+      <label class="f">Token<input type="password" name="token" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
+      <details><summary>Erweitert</summary><div class="grid2">
+        <label class="f">GitHub-Benutzer<input type="text" name="owner" value="${esc(SY.owner)}" autocapitalize="off" spellcheck="false"></label>
+        <label class="f">Daten-Repository<input type="text" name="repo" value="${esc(SY.repo)}" autocapitalize="off" spellcheck="false"></label></div></details>
+      <button class="btn primary" ${ui.checking?'disabled':''}>${ui.checking?'Token wird geprüft …':'Freischalten'}</button>${err}
+    </form>
+    <p class="muted small">Den Token bekommst du von den Kassenverantwortlichen des Vereins.</p></div>`;
+}
 function vSpieltag(){
   const mds=[...D.matchdays].sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created);
   if(!mds.find(m=>m.id===ui.md))ui.md=mds[0]?.id||null;
   const md=D.matchdays.find(m=>m.id===ui.md);
   const opps=[...new Set(D.matchdays.map(m=>m.opponent))];
   let h=`<div class="bar">`;
-  if(mds.length)h+=`<select data-change="selMd" aria-label="Spieltag wählen">${mds.map(m=>`<option value="${m.id}" ${m.id===ui.md?'selected':''}>${esc(fmtDate(m.date))} gegen ${esc(m.opponent)}</option>`).join('')}</select>`;
-  h+=`<button class="btn primary" data-act="newMd">Neuer Spieltag</button></div>`;
-  if(ui.showNewMd||!mds.length){
+  if(mds.length)h+=`<select data-change="selMd" aria-label="Spieltag wählen">${mds.map(m=>`<option value="${m.id}" ${m.id===ui.md?'selected':''}>${esc(fmtDate(m.date))}: ${m.type==='training'?'Training':'Heimspiel gegen '+esc(m.opponent)}</option>`).join('')}</select>`;
+  h+=`<button class="btn primary" data-act="newMd" data-k="spiel">Neuer Spieltag</button><button class="btn blue" data-act="newMd" data-k="training">Neuer Trainingstag</button></div>`;
+  if(ui.showNewMd==='training'){
+    const r=D.settings.roster;
+    h+=`<form class="panel" data-form="newTr"><h3 style="margin-bottom:4px">Neuen Trainingstag anlegen</h3>
+      <p class="muted small" style="margin-top:0">${r.length?`Die ${r.length} Stammspieler werden automatisch eingetragen. Wer nicht da ist, entfernst du mit ×.`:'Noch keine Stammspieler hinterlegt. Trage sie unter Einstellungen ein, dann werden sie hier automatisch übernommen.'} Alle Getränke am Trainingstag gehen an das Fanprojekt.</p>
+      <div class="grid2"><label class="f">Datum<input type="date" name="date" value="${todayStr()}" required></label>
+      <div class="row"><button class="btn blue">Trainingstag anlegen</button><button type="button" class="btn ghost" data-act="newMd" data-k="training">Abbrechen</button></div></div></form>`;
+  }
+  else if(ui.showNewMd==='spiel'){
     h+=`<form class="panel" data-form="newMd"><h3 style="margin-bottom:12px">Neuen Heimspieltag anlegen</h3>
       <div class="grid2"><label class="f">Datum<input type="date" name="date" value="${todayStr()}" required></label>
       <label class="f">Gegner (Mannschaft)<input type="text" name="opp" id="newOpp" list="oppList" placeholder="z. B. DC Heiligenhaus" required></label>
-      <div class="row"><button class="btn primary">Spieltag anlegen</button>${mds.length?'<button type="button" class="btn ghost" data-act="newMd">Abbrechen</button>':''}</div></div>
+      <div class="row"><button class="btn primary">Spieltag anlegen</button><button type="button" class="btn ghost" data-act="newMd" data-k="spiel">Abbrechen</button></div></div>
       <datalist id="oppList">${opps.map(o=>`<option value="${esc(o)}">`).join('')}</datalist></form>`;
   }
-  if(!md){return h+(mds.length?'':`<div class="empty"><strong>Noch kein Spieltag angelegt</strong>Lege oben den ersten Heimspieltag an. Danach trägst du die Spieler beider Mannschaften ein und buchst Getränke mit einem Tipp.</div>`)}
+  if(!md){return h+(mds.length||ui.showNewMd?'':`<div class="empty"><strong>Noch nichts angelegt</strong>Lege oben einen Heimspieltag oder einen Trainingstag an. Danach trägst du die Spieler ein und buchst Getränke mit einem Tipp.</div>`)}
+  const isTr=md.type==='training';
 
   const C=compute();
   const daySales=D.sales.filter(s=>s.md===md.id);
   const umsatz=daySales.reduce((a,s)=>a+s.qty*s.price,0);
   const bezahlt=md.people.reduce((a,p)=>a+(p.paid||0),0);
   const offen=md.people.reduce((a,p)=>a+Math.max(0,totalOf(md,p)-(p.paid||0)),0);
-  h+=`<div class="vs"><div class="side home"><small>Heim</small><b>${esc(D.settings.club)}</b></div><div class="mid">vs</div><div class="side away"><small>Gast</small><b>${esc(md.opponent)}</b></div></div>`;
+  h+=isTr?`<div class="vs solo"><div class="side home"><small>Trainingstag, alle Getränke gehen an das Fanprojekt</small><b>${esc(D.settings.club)}</b></div></div>`
+    :`<div class="vs"><div class="side home"><small>Heim</small><b>${esc(D.settings.club)}</b></div><div class="mid">vs</div><div class="side away"><small>Gast</small><b>${esc(md.opponent)}</b></div></div>`;
   h+=`<div class="stats">
     <div class="stat"><div class="k">${esc(fmtDate(md.date))}</div><div class="v">${eur(umsatz)}</div><div class="k">Umsatz</div></div>
     <div class="stat"><div class="k">Kassiert</div><div class="v" style="color:var(--ok)">${eur(bezahlt)}</div></div>
@@ -503,9 +549,9 @@ function vSpieltag(){
       <div class="split">${n?`<i class="v1" style="width:${v/n*100}%"></i><i class="v2" style="width:${f/n*100}%"></i>`:''}</div>
       <div class="legend"><span><i style="background:var(--blau)"></i>Verein ${v}</span><span><i style="background:var(--fp)"></i>Fanprojekt ${f}</span></div></div>`});
   h+=`</div>`;
-  h+=`<div class="teams">${vTeam(md,'heim')}${vTeam(md,'gast')}</div>`;
+  h+=isTr?`<div class="teams solo">${vTeam(md,'heim')}</div>`:`<div class="teams">${vTeam(md,'heim')}${vTeam(md,'gast')}</div>`;
   h+=`<div class="bar" style="margin-top:20px"><button class="btn blue" data-act="print" data-md="${md.id}">Abrechnung drucken</button>
-     <button class="btn danger" data-act="delMd" data-md="${md.id}">Spieltag löschen</button></div>`;
+     <button class="btn danger" data-act="delMd" data-md="${md.id}">${isTr?'Trainingstag':'Spieltag'} löschen</button></div>`;
   return h;
 }
 function suggestions(md,team){
@@ -643,7 +689,7 @@ function vEinstellungen(){
 /* ===================== Druck ===================== */
 function doPrint(mdId,pid){
   const md=D.matchdays.find(m=>m.id===mdId);if(!md)return;
-  const head=`<div class="phead">${logoMarkup()}<div><h1>${esc(D.settings.club)}</h1><div>Heimspiel gegen ${esc(md.opponent)}, ${esc(fmtDate(md.date))}</div></div></div>`;
+  const head=`<div class="phead">${logoMarkup()}<div><h1>${esc(D.settings.club)}</h1><div>${md.type==='training'?'Training':'Heimspiel gegen '+esc(md.opponent)}, ${esc(fmtDate(md.date))}</div></div></div>`;
   let h=head;
   if(pid){
     const p=md.people.find(x=>x.id===pid);const t=totalOf(md,p);
@@ -673,7 +719,7 @@ function addPeople(team,names){
 }
 const act={
   tab:el=>{ui.tab=el.dataset.tab;render();window.scrollTo(0,0)},
-  newMd:()=>{ui.showNewMd=!ui.showNewMd;ui.focus='newOpp';render()},
+  newMd:el=>{const k=el.dataset.k||'spiel';ui.showNewMd=ui.showNewMd===k?false:k;ui.focus=k==='spiel'?'newOpp':null;render()},
   plus:el=>{const md=curMd(),c=el.dataset.c;D.sales.push({id:uid(),md:md.id,p:el.dataset.p,cat:c,qty:1,price:num(D.settings.prices[c]),fp:num(D.settings.fp[c]),ts:Date.now()});save();render()},
   minus:el=>{const md=curMd();const ss=D.sales.filter(s=>s.md===md.id&&s.p===el.dataset.p&&s.cat===el.dataset.c).sort((a,b)=>b.ts-a.ts);
     if(ss[0]){tomb(ss[0].id);D.sales=D.sales.filter(s=>s!==ss[0]);save();render()}},
@@ -686,7 +732,7 @@ const act={
     tomb(p.id,...salesOf(md,p).map(s=>s.id));D.sales=D.sales.filter(s=>!(s.md===md.id&&s.p===p.id));md.people=md.people.filter(x=>x!==p);save();render()},
   chip:el=>{addPeople(el.dataset.team,[el.dataset.name]);render()},
   allChips:el=>{const md=curMd();addPeople(el.dataset.team,suggestions(md,el.dataset.team));render()},
-  delMd:el=>{const md=D.matchdays.find(m=>m.id===el.dataset.md);if(!confirm('Spieltag gegen '+md.opponent+' am '+fmtDate(md.date)+' mit allen Buchungen löschen?'))return;
+  delMd:el=>{const md=D.matchdays.find(m=>m.id===el.dataset.md);if(!confirm((md.type==='training'?'Trainingstag':'Spieltag gegen '+md.opponent)+' am '+fmtDate(md.date)+' mit allen Buchungen löschen?'))return;
     tomb(md.id,...D.sales.filter(s=>s.md===md.id).map(s=>s.id));D.sales=D.sales.filter(s=>s.md!==md.id);D.matchdays=D.matchdays.filter(m=>m!==md);ui.md=null;save();render()},
   print:el=>doPrint(el.dataset.md),
   printP:el=>doPrint(ui.md,el.dataset.p),
@@ -699,7 +745,8 @@ const act={
   exp:exportJson,
   share:shareState,
   syncNow:()=>{syncNow();toast('Gleiche ab …')},
-  syncOff:()=>{if(!confirm('Online-Abgleich auf diesem Gerät trennen? Der Token wird hier gelöscht, die Daten bleiben erhalten.'))return;SY.token='';saveSyncCfg();syncState='off';status();render()},
+  syncOff:()=>{if(!confirm('Token und alle Kassendaten von diesem Gerät entfernen? Online bleibt alles erhalten und erscheint wieder, sobald der Token erneut eingegeben wird.'))return;
+    SY.token='';SY.blocked=false;saveSyncCfg();D=blank();try{localStorage.removeItem(LS_KEY)}catch(e){};fh=null;fhPending=null;idbDel('fh');syncState='off';ui.md=null;renderHeader();status();render()},
   imp:()=>document.getElementById('impFile').click(),
   logoUp:()=>document.getElementById('logoFile').click(),
   logoDel:()=>{D.logo=null;D.settingsTs=Date.now();save();renderHeader();render()},
@@ -707,18 +754,23 @@ const act={
     const keep={settings:D.settings,logo:D.logo};D=normalize(keep);save();ui.md=null;render();toast('Alle Daten gelöscht')}
 };
 const forms={
-  sync:f=>{SY.owner=f.owner.value.trim();SY.repo=f.repo.value.trim();if(f.token.value.trim())SY.token=f.token.value.trim();
+  unlock:f=>{const t=f.elements.token.value.trim();if(!t)return;SY.token=t;if(f.elements.owner.value.trim())SY.owner=f.elements.owner.value.trim();if(f.elements.repo.value.trim())SY.repo=f.elements.repo.value.trim();
+    SY.blocked=true;saveSyncCfg();ui.checking=true;syncErr='';render();status();syncNow()},
+  newTr:f=>{const md={id:uid(),type:'training',date:f.elements.date.value||todayStr(),opponent:'Training',people:[],created:Date.now()};
+    const seen=new Set();D.settings.roster.forEach(n=>{const k=n.toLowerCase();if(!seen.has(k)){seen.add(k);md.people.push({id:uid(),name:n,team:'heim',paid:0})}});
+    D.matchdays.push(md);ui.md=md.id;ui.showNewMd=false;save();render();toast('Trainingstag angelegt')},
+  sync:f=>{SY.owner=f.elements.owner.value.trim();SY.repo=f.elements.repo.value.trim();if(f.elements.token.value.trim())SY.token=f.elements.token.value.trim();
     if(!SY.token){toast('Bitte den Token eintragen.');return}
     saveSyncCfg();syncState='busy';render();status();syncNow().then(()=>{if(syncState==='ok')toast('Online-Abgleich eingerichtet')})},
-  newMd:f=>{const opp=f.opp.value.trim();if(!opp)return;const md={id:uid(),date:f.date.value||todayStr(),opponent:opp,people:[],created:Date.now()};
+  newMd:f=>{const opp=f.elements.opp.value.trim();if(!opp)return;const md={id:uid(),date:f.elements.date.value||todayStr(),opponent:opp,people:[],created:Date.now()};
     D.matchdays.push(md);ui.md=md.id;ui.showNewMd=false;save();ui.focus='add-heim';render()},
-  addP:f=>{const team=f.dataset.team;addPeople(team,f.n.value.split(','));ui.focus='add-'+team;render()},
-  batch:f=>{const qty=Math.round(num(f.qty.value));if(qty<1){toast('Bitte eine Anzahl eingeben.');return}
-    const ts=f.ts.value?new Date(f.ts.value).getTime():Date.now();
-    D.batches.push({id:uid(),cat:f.cat.value,qty,cost:num(f.cost.value),ts,fromKasse:f.fromKasse.checked,note:f.note.value.trim()});
-    save();render();toast(qty+'× '+CATN[f.cat.value]+' eingebucht')},
-  move:f=>{const a=Math.abs(num(f.amt.value));if(!a){toast('Bitte einen Betrag eingeben.');return}
-    const type=f.type.value;D.moves.push({id:uid(),ts:Date.now(),type,amt:type==='ein'?a:-a,note:f.note.value.trim()});save();render();toast('Gebucht')}
+  addP:f=>{const team=f.dataset.team;addPeople(team,f.elements.n.value.split(','));ui.focus='add-'+team;render()},
+  batch:f=>{const qty=Math.round(num(f.elements.qty.value));if(qty<1){toast('Bitte eine Anzahl eingeben.');return}
+    const ts=f.elements.ts.value?new Date(f.elements.ts.value).getTime():Date.now();
+    D.batches.push({id:uid(),cat:f.elements.cat.value,qty,cost:num(f.elements.cost.value),ts,fromKasse:f.elements.fromKasse.checked,note:f.elements.note.value.trim()});
+    save();render();toast(qty+'× '+CATN[f.elements.cat.value]+' eingebucht')},
+  move:f=>{const a=Math.abs(num(f.elements.amt.value));if(!a){toast('Bitte einen Betrag eingeben.');return}
+    const type=f.elements.type.value;D.moves.push({id:uid(),ts:Date.now(),type,amt:type==='ein'?a:-a,note:f.elements.note.value.trim()});save();render();toast('Gebucht')}
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const fn=act[el.dataset.act];if(fn){e.preventDefault();fn(el,e)}});
 document.addEventListener('submit',e=>{const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();forms[f.dataset.form]?.(f)});
