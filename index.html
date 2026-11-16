@@ -63,7 +63,7 @@ h3{font-size:1.1rem;margin:0}
 .btn:disabled{opacity:.45;cursor:default}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
-input[type=text],input[type=number],input[type=date],input[type=datetime-local],select,textarea{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0}
+input[type=text],input[type=number],input[type=date],input[type=datetime-local],input[type=email],input[type=url],input[type=password],input[type=tel],input[type=time],select,textarea{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0}
 textarea{width:100%;min-height:140px;resize:vertical}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted);font-weight:600}
 label.f > *{color:var(--ink);font-weight:400;font-size:1rem}
@@ -248,6 +248,9 @@ body.locked nav.tabs, body.locked [data-act=share]{display:none}
 .liveres{display:flex;gap:12px;align-items:center;background:var(--rot);color:#fff;border-radius:14px;padding:12px 16px;margin-bottom:12px;text-decoration:none}
 .liveres b{display:block}.liveres span{flex:1}.liveres .go{flex:none;background:#fff;color:var(--rot);border-radius:10px;padding:8px 12px;font-weight:700;white-space:nowrap}
 .btn.live{background:var(--rot);border-color:var(--rot);color:#fff;text-decoration:none}
+.pass{display:inline-flex;align-items:center;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:1px 2px 1px 9px;margin:0 4px 4px 0}
+.pass .x{font-size:1rem;padding:0 5px}
+.carAdd{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.carAdd select{flex:1;min-width:150px;padding:6px 8px}.carAdd .btn{margin-top:0}
 /* Druck */
 #print{display:none}
 @media print{
@@ -571,7 +574,7 @@ async function syncNow(){
     }
     if(!done)throw new Error('Mehrere Geräte speichern gerade gleichzeitig. Bitte gleich noch einmal abgleichen.');
     syncState='ok';syncErr='';lastSync=Date.now();
-    afterSync();
+    afterSync();pushLive();
     if(SY.blocked){SY.blocked=false;saveSyncCfg();ui.checking=false;renderHeader();render()}
   }catch(e){syncState=navigator.onLine?'err':'offline';syncErr=navigator.onLine?(e.message||String(e)):'Keine Internetverbindung. Zum Freischalten wird Internet benötigt.';
     if(e.auth&&!SY.blocked){SY.blocked=true;saveSyncCfg()}
@@ -622,7 +625,21 @@ const PUBDEF={training:{day:'Donnerstag',time:'18:45',text:'Open Door: Wer Darts
 let PUB=null,pubLoaded=false,instaOn=false;
 const pubData=()=>Object.assign({},PUBDEF,PUB||{});
 const pubEdit=()=>Object.assign({},PUBDEF,D.pub||PUB||{});
-async function loadPublic(){try{const r=await fetch('public.json?t='+Date.now(),{cache:'no-store'});if(r.ok)PUB=await r.json()}catch(e){}pubLoaded=true;if(locked())render()}
+let LIVE=[];
+async function loadPublic(){try{const r=await fetch('public.json?t='+Date.now(),{cache:'no-store'});if(r.ok)PUB=await r.json()}catch(e){}
+  try{const r=await fetch('live.json?t='+Date.now(),{cache:'no-store'});if(r.ok){const j=await r.json();LIVE=Array.isArray(j.events)?j.events:[]}}catch(e){}
+  pubLoaded=true;if(locked())render()}
+// Öffentliche Live-Links: nur Gegner, Datum, Uhrzeit und Link, ohne Ort oder Namen
+function liveList(){const yd=new Date();yd.setDate(yd.getDate()-1);const ydS=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+  return D.events.filter(e=>(e.type==='heim'||e.type==='auswaerts')&&safeUrl(e.live)&&e.date>=ydS).sort((a,b)=>evKey(a).localeCompare(evKey(b))).map(e=>({id:e.id,type:e.type,title:e.title,date:e.date,time:e.time||'',live:safeUrl(e.live)}))}
+let lastLive=null;
+async function pushLive(){if(!syncOn()||!navigator.onLine)return;const ev=liveList();const body=JSON.stringify({events:ev},null,1);if(body===lastLive)return;
+  const put=async(url,H,msg)=>{let sha;const g=await fetch(url+'?t='+Date.now(),{headers:H,cache:'no-store'});if(g.ok){const j=await g.json();sha=j.sha;try{if(b64d(j.content||'').trim()===body.trim())return true}catch(e){}}else if(g.status!==404)return false;
+    const r=await fetch(url,{method:'PUT',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({message:msg,content:b64e(body),...(sha?{sha}:{})})});return r.ok};
+  try{// in das private Daten-Repository, von dort überträgt ein GitHub-Skript es auf die öffentliche Seite
+    if(await put(ghRepoUrl()+'/contents/live.json',ghH(),'Live-Links aktualisiert'))lastLive=body;
+    if(SY.pubToken){await put(`https://api.github.com/repos/${encodeURIComponent(SY.owner)}/${encodeURIComponent(SY.pubRepo||'Rot-Blau-Dartkasse')}/contents/live.json`,{'Authorization':'Bearer '+SY.pubToken,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},'Live-Links aktualisiert')}
+  }catch(e){}}
 const safeUrl=u=>/^https?:\/\//i.test(String(u||'').trim())?String(u).trim():'';
 const mapsUrl=a=>{const m=safeUrl((pubData().place||{}).maps);return m||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a)};
 function vPublic(){const P=pubData();const t=P.training||{};
@@ -632,6 +649,8 @@ function vPublic(){const P=pubData();const t=P.training||{};
     <div><h2>Darts in Wuppertal</h2><p class="pub-lead">Steel-Darts mit Herz, Training mit offener Tür. Schau einfach vorbei!</p>
     <div class="pub-train"><b>🎯 Training: jeden ${esc(t.day||'Donnerstag')} ab ${esc(t.time||'18:45')} Uhr</b><span>${esc(t.text||'')}</span>
     ${P.place&&P.place.addr?`<a class="btn" href="${mapsUrl((P.place.name?P.place.name+', ':'')+P.place.addr)}" target="_blank" rel="noopener">📍 ${esc(P.place.name||'')}${P.place.name?', ':''}${esc(P.place.addr)}</a>`:''}</div></div></section>
+  ${(()=>{const t=todayStr();const yd=new Date();yd.setDate(yd.getDate()-1);const ydS=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+    return LIVE.filter(e=>safeUrl(e.live)&&e.date>=ydS&&e.date<=t).map(e=>`<a class="liveres" href="${esc(safeUrl(e.live))}" target="_blank" rel="noopener"><span style="font-size:1.4rem;flex:none">📊</span><span><b>Live: ${e.type==='heim'?esc(D.settings.club||'DC Rot-Blau Wuppertal')+' gegen '+esc(e.title):esc(e.title)+' gegen '+esc(D.settings.club||'DC Rot-Blau Wuppertal')}</b>${esc(fmtDate(e.date))}${e.time?', '+esc(e.time)+' Uhr':''}</span><span class="go">Ergebnisse</span></a>`).join('')})()}
   <div class="pub-grid"><div>
     <div class="panel"><h3 style="margin-bottom:6px">Neuigkeiten</h3>${news.length?news.map(n=>`<article class="pub-news"><span class="muted small">${esc(fmtDate(n.date))}</span><h4>${esc(n.title)}</h4>${n.text?`<p>${esc(n.text)}</p>`:''}${safeUrl(n.link)?`<a href="${esc(safeUrl(n.link))}" target="_blank" rel="noopener">Mehr erfahren →</a>`:''}</article>`).join(''):'<p class="muted">Bald gibt es hier Neuigkeiten.</p>'}</div>
     ${P.insta||posts.length?`<div class="panel"><div class="row" style="justify-content:space-between"><h3>Instagram</h3>${safeUrl(P.insta)?`<a class="btn ghost" href="${esc(safeUrl(P.insta))}" target="_blank" rel="noopener">Zum Profil</a>`:''}</div>
@@ -650,9 +669,6 @@ function vLocked(){
   return vPublic()+`<div class="lock" style="margin-top:10px"><h2>Mitgliederbereich</h2><p class="muted">Keine Daten vorhanden. Nur sichtbar mit aktuellem Token.</p>
     <form data-form="unlock" class="panel">
       <label class="f">Token<input type="password" name="token" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
-      <details><summary>Erweitert</summary><div class="grid2">
-        <label class="f">GitHub-Benutzer<input type="text" name="owner" value="${esc(SY.owner)}" autocapitalize="off" spellcheck="false"></label>
-        <label class="f">Daten-Repository<input type="text" name="repo" value="${esc(SY.repo)}" autocapitalize="off" spellcheck="false"></label></div></details>
       <button class="btn primary" ${ui.checking?'disabled':''}>${ui.checking?'Token wird geprüft …':'Freischalten'}</button>${err}
     </form>
     <p class="muted small">Den Token bekommst du von den Verantwortlichen des Vereins.</p></div>`;
@@ -849,8 +865,6 @@ function vEinstellungen(){
   <form class="panel" data-form="sync"><h3 style="margin-bottom:4px">Online-Abgleich</h3>
     <p class="small" style="margin-top:0">${syncTxt}</p>
     <div class="grid2">
-      <label class="f">GitHub-Benutzer<input type="text" name="owner" value="${esc(SY.owner)}" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
-      <label class="f">Daten-Repository<input type="text" name="repo" value="${esc(SY.repo)}" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
       <label class="f">Token${SY.token?' (hinterlegt ✓)':''}<input type="password" name="token" placeholder="${SY.token?'nur zum Ändern eingeben':'github_pat_…'}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
     </div>
     <div class="row" style="margin-top:12px"><button class="btn primary">${syncOn()?'Speichern':'Verbinden'}</button>
@@ -933,12 +947,12 @@ const act={
     const keep={settings:D.settings,logo:D.logo};D=normalize(keep);save();ui.md=null;render();toast('Alle Daten gelöscht')}
 };
 const forms={
-  unlock:f=>{const t=f.elements.token.value.trim();if(!t)return;SY.token=t;SY.revoked='';if(f.elements.owner.value.trim())SY.owner=f.elements.owner.value.trim();if(f.elements.repo.value.trim())SY.repo=f.elements.repo.value.trim();
+  unlock:f=>{const t=f.elements.token.value.trim();if(!t)return;SY.token=t;SY.revoked='';
     SY.blocked=true;saveSyncCfg();ui.checking=true;syncErr='';render();status();syncNow()},
   newTr:f=>{const md={id:uid(),type:'training',date:f.elements.date.value||todayStr(),opponent:'Training',people:[],created:Date.now()};
     const seen=new Set();D.settings.roster.forEach(n=>{const k=n.toLowerCase();if(!seen.has(k)){seen.add(k);md.people.push({id:uid(),name:n,team:'heim',paid:0})}});
     D.matchdays.push(md);ui.md=md.id;ui.showNewMd=false;save();render();toast('Trainingstag angelegt')},
-  sync:f=>{SY.owner=f.elements.owner.value.trim();SY.repo=f.elements.repo.value.trim();if(f.elements.token.value.trim())SY.token=f.elements.token.value.trim();
+  sync:f=>{if(f.elements.owner){SY.owner=f.elements.owner.value.trim()||SY.owner;SY.repo=f.elements.repo.value.trim()||SY.repo}if(f.elements.token.value.trim())SY.token=f.elements.token.value.trim();
     if(!SY.token){toast('Bitte den Token eintragen.');return}
     saveSyncCfg();syncState='busy';render();status();syncNow().then(()=>{if(syncState==='ok')toast('Online-Abgleich eingerichtet')})},
   newMd:f=>{const opp=f.elements.opp.value.trim();if(!opp)return;const md={id:uid(),date:f.elements.date.value||todayStr(),opponent:opp,people:[],created:Date.now()};
@@ -1029,6 +1043,7 @@ const jaCount=e=>activeMembers().filter(x=>(rs(e.id,x.id)||{}).status==='ja').le
 function pBadge(e){if(e.type!=='heim'&&e.type!=='auswaerts')return'';const n=jaCount(e),L=pLimits();return`<span class="pl pl-${pLevel(n)}" title="Ab ${L.mn} knapp, ab ${L.ok} vollständig">${n} / ${L.ok} Spieler</span>`}
 const evKey=e=>e.date+(e.time||'');
 const rs=(ev,m)=>D.rsvps.find(r=>r.id===ev+'~'+m);
+function setRsFor(evId,mId,patch){const id=evId+'~'+mId;let r=D.rsvps.find(x=>x.id===id);if(!r){r={id,ev:evId,m:mId};D.rsvps.push(r)}Object.assign(r,patch);touch(r);save();render()}
 function setRs(evId,patch){const id=evId+'~'+SY.me;let r=D.rsvps.find(x=>x.id===id);if(!r){r={id,ev:evId,m:SY.me};D.rsvps.push(r)}Object.assign(r,patch);touch(r);save();render()}
 function teamTitles(){return[...new Set([...knownTeams().map(x=>x.name),...D.events.filter(e=>e.type==='heim'||e.type==='auswaerts').map(e=>e.title)])].sort((a,b)=>a.localeCompare(b,'de'))}
 function vTermine(){
@@ -1082,6 +1097,18 @@ function vEvent(e){
   }
   return h+'</article>';
 }
+function vCarManage(e,c){
+  let h=c.pass.length?`<div class="small" style="margin-top:6px">${c.pass.map(id=>`<span class="pass">${esc(mName(id))}<button class="x" data-act="carKick" data-ev="${e.id}" data-m="${id}" title="Aus dem Auto nehmen">×</button></span>`).join('')}</div>`:'';
+  if(c.free<1)return h;
+  const inCars=new Set(travel(e).cars.flatMap(x=>[x.d,...x.pass]));
+  const G={suche:[],offen:[],andere:[],ohne:[]};
+  activeMembers().forEach(m=>{if(inCars.has(m.id))return;const r=rs(e.id,m.id)||{};
+    if(r.status==='nein')return;if(!r.status)G.ohne.push(m);else if(r.mode==='suche'||(r.mode==='mit'))G.suche.push(m);else if(!r.mode)G.offen.push(m);else G.andere.push(m)});
+  const opt=(l,arr)=>arr.length?`<optgroup label="${l}">${arr.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('')}</optgroup>`:'';
+  const any=G.suche.length+G.offen.length+G.andere.length+G.ohne.length;
+  if(!any)return h;
+  return h+`<form class="carAdd" data-form="carAdd" data-ev="${e.id}"><select name="m" aria-label="Mitfahrer hinzufügen"><option value="">Mitfahrer hinzufügen …</option>${opt('Sucht Mitfahrgelegenheit',G.suche)}${opt('Anreise noch offen',G.offen)}${opt('Andere Anreise geplant',G.andere)}${opt('Noch ohne Antwort (wird als Zusage eingetragen)',G.ohne)}</select><button class="btn blue">Hinzufügen</button></form>`;
+}
 function vTravel(e,mine){
   const T=travel(e);const going=mine.status==='ja'||mine.status==='vl';const N=ids=>ids.map(id=>esc(mName(id))).join(', ');
   let h='<h4 style="margin-top:16px">Fahrten</h4>';
@@ -1094,7 +1121,8 @@ function vTravel(e,mine){
   h+=`<div class="cars">${T.cars.map(c=>{const iam=SY.me===c.d,inCar=c.pass.includes(SY.me);
     return`<div class="car"><b>🚗 ${esc(mName(c.d))}</b><div class="seats">${Array.from({length:Math.max(c.seats,c.pass.length)},(_,i)=>`<i class="seat ${i<c.pass.length?(i<c.seats?'full':'over'):''}"></i>`).join('')}</div>
       <div class="small">${c.pass.length?N(c.pass):'Noch niemand eingestiegen'}</div><div class="small muted">${c.pass.length>c.seats?'überbucht':c.free?c.free+' '+(c.free===1?'Platz':'Plätze')+' frei':'Auto ist voll'}</div>
-      ${going&&!iam?(inCar?`<button class="btn ghost" data-act="carOut" data-ev="${e.id}">Aussteigen</button>`:c.free?`<button class="btn blue" data-act="carIn" data-ev="${e.id}" data-d="${c.d}">Mitfahren</button>`:''):''}</div>`}).join('')||'<p class="muted small">Noch hat sich niemand als Fahrer eingetragen.</p>'}</div>`;
+      ${going&&!iam?(inCar?`<button class="btn ghost" data-act="carOut" data-ev="${e.id}">Aussteigen</button>`:c.free?`<button class="btn blue" data-act="carIn" data-ev="${e.id}" data-d="${c.d}">Mitfahren</button>`:''):''}
+      ${iam?vCarManage(e,c):''}</div>`}).join('')||'<p class="muted small">Noch hat sich niemand als Fahrer eingetragen.</p>'}</div>`;
   const G=(l,ids)=>ids.length?`<div class="grp"><b>${l}:</b> ${N(ids)}</div>`:'';
   h+=G('<span style="color:var(--rot)">🙋 Sucht Mitfahrgelegenheit</span>',T.need)+G('🚆 Bahn oder ÖPNV',T.zug)+G('🧭 Reist selbst an',T.selbst)+G('🚲 Fahrrad',T.rad)+G('<span class="r">Anreise noch offen</span>',T.none);
   return h;
@@ -1247,9 +1275,10 @@ async function publishPublic(){
   const P=pubEdit();const body=JSON.stringify({training:P.training,place:P.place,mail:P.mail,insta:P.insta,instaPosts:P.instaPosts,news:P.news,sponsors:P.sponsors,updated:Date.now()},null,1);
   const url=`https://api.github.com/repos/${encodeURIComponent(SY.owner)}/${encodeURIComponent(SY.pubRepo||'Rot-Blau-Dartkasse')}/contents/public.json`;
   const H={'Authorization':'Bearer '+SY.pubToken,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
-  let sha;const g=await fetch(url+'?t='+Date.now(),{headers:H,cache:'no-store'});if(g.ok)sha=(await g.json()).sha;else if(g.status!==404)throw new Error(ghErr(g.status));
+  const why=st=>st===401?'Der Veröffentlichungs-Token ist ungültig oder abgelaufen.':(st===403||st===404)?'Der Veröffentlichungs-Token hat keinen Schreibzugriff auf das Repository „'+(SY.pubRepo||'Rot-Blau-Dartkasse')+'“. Beim Erstellen genau dieses Repository auswählen und „Contents: Read and write“ setzen.':'GitHub antwortet mit Fehler '+st+'.';
+  let sha;const g=await fetch(url+'?t='+Date.now(),{headers:H,cache:'no-store'});if(g.ok)sha=(await g.json()).sha;else if(g.status!==404)throw new Error(why(g.status));
   const r=await fetch(url,{method:'PUT',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({message:'Öffentliche Startseite aktualisiert',content:b64e(body),...(sha?{sha}:{})})});
-  if(!r.ok)throw new Error(ghErr(r.status));
+  if(!r.ok)throw new Error(why(r.status));
   D.pub=Object.assign({},pubEdit(),{u:D.pub&&D.pub.u||Date.now(),pubAt:Date.now()});save();
 }
 
@@ -1279,6 +1308,12 @@ function vAdmin(){
     <li>Das neue Ablaufdatum oben eintragen.</li></ol></div>
   ${vMailAdmin()}
   ${vPubAdmin()}
+  <form class="panel" data-form="sync" style="max-width:640px"><h3 style="margin-bottom:6px">Online-Abgleich (technisch)</h3>
+    <p class="muted small" style="margin-top:0">Nur für dich sichtbar. Diese Angaben gelten für dieses Gerät, alle anderen nutzen die eingebauten Standardwerte.</p>
+    <div class="grid2"><label class="f">GitHub-Benutzer<input type="text" name="owner" value="${esc(SY.owner)}" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
+      <label class="f">Daten-Repository<input type="text" name="repo" value="${esc(SY.repo)}" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
+      <input type="hidden" name="token" value=""></div>
+    <div class="row" style="margin-top:12px"><button class="btn">Speichern</button></div></form>
   ${vAdminSettings()}
   <form class="panel" data-form="admPw2" style="max-width:480px"><h3 style="margin-bottom:8px">Admin-Passwort ändern</h3><label class="f">Neues Passwort<input type="password" name="a" minlength="6" required autocomplete="new-password"></label><div class="row" style="margin-top:12px"><button class="btn">Ändern</button></div></form>`;
 }
@@ -1294,11 +1329,12 @@ Object.assign(act,{
   evOpen:el=>{ui.openEv=ui.openEv===el.dataset.ev?null:el.dataset.ev;render()},
   evEdit:el=>{ui.evForm=el.dataset.ev;render();window.scrollTo(0,0)},
   evDel:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);if(!e||!confirm(ET[e.type]+' „'+e.title+'“ am '+fmtDate(e.date)+' mit allen Zu- und Absagen löschen?'))return;
-    const rr=D.rsvps.filter(r=>r.ev===e.id);tomb(e.id,...rr.map(r=>r.id));D.rsvps=D.rsvps.filter(r=>r.ev!==e.id);D.events=D.events.filter(x=>x!==e);save();render()},
+    const rr=D.rsvps.filter(r=>r.ev===e.id);tomb(e.id,...rr.map(r=>r.id));D.rsvps=D.rsvps.filter(r=>r.ev!==e.id);D.events=D.events.filter(x=>x!==e);save();render();pushLive()},
   rsvp:el=>{const s=el.dataset.s;if(s==='ja'){ui.reason=null;setRs(el.dataset.ev,{status:'ja',reason:''});return}ui.reason={ev:el.dataset.ev,s};ui.focus='reasonIn';render()},
   reasonCancel:()=>{ui.reason=null;render()},
   carIn:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);const c=travel(e).cars.find(c=>c.d===el.dataset.d);if(!c||c.free<1){toast('Das Auto ist schon voll.');return}setRs(e.id,{mode:'mit',car:el.dataset.d});toast('Du fährst bei '+mName(el.dataset.d)+' mit')},
   carOut:el=>setRs(el.dataset.ev,{mode:'suche',car:null}),
+  carKick:el=>{const n=mName(el.dataset.m);if(!confirm(n+' aus deinem Auto nehmen? Er steht dann wieder bei „Sucht Mitfahrgelegenheit“.'))return;setRsFor(el.dataset.ev,el.dataset.m,{mode:'suche',car:null});toast(n+' ausgetragen')},
   evKasse:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);if(!e)return;let md=D.matchdays.find(m=>m.ev===e.id);
     if(!md){const tr=e.type==='training';md={id:uid(),date:e.date,opponent:tr?'Training':e.title,people:[],created:Date.now(),ev:e.id};if(tr)md.type='training';
       const seen=new Set();const add=(n,team)=>{const k=team+'|'+n.toLowerCase();if(!seen.has(k)){seen.add(k);md.people.push({id:uid(),name:n,team,paid:0})}};
@@ -1328,6 +1364,10 @@ Object.assign(act,{
     const rr=D.rsvps.filter(r=>r.m===m.id);tomb(m.id,...rr.map(r=>r.id));D.rsvps=D.rsvps.filter(r=>r.m!==m.id);D.members=D.members.filter(x=>x!==m);save();render()}
 });
 Object.assign(forms,{
+  carAdd:f=>{const mId=f.elements.m.value;if(!mId)return;const e=D.events.find(x=>x.id===f.dataset.ev);if(!e)return;
+    const c=travel(e).cars.find(x=>x.d===SY.me);if(!c||c.free<1){toast('Dein Auto ist schon voll.');return}
+    const r=rs(e.id,mId)||{};const patch={mode:'mit',car:SY.me};if(!r.status||r.status==='nein')patch.status='ja';
+    setRsFor(e.id,mId,patch);toast(mName(mId)+' fährt bei dir mit')},
   newMe:f=>{setMe(createMember(f.elements.n.value))},
   ev:f=>{const F=f.elements;const type=F.type.value;const lv=F.live.value.trim();if(lv&&!safeUrl(lv)){toast('Ergebnis-Link bitte mit https:// angeben.');return}const base={type,title:F.title.value.trim()||ET[type],date:F.date.value||todayStr(),time:F.time.value,place:F.place.value.trim(),meet:F.meet.value.trim(),note:F.note.value.trim(),live:lv};
     if(ui.evForm==='new'){const n=Math.max(1,+(F.rep?F.rep.value:1)||1);
@@ -1335,7 +1375,7 @@ Object.assign(forms,{
         D.events.push(touch({id:uid(),...base,date:ds,created:Date.now(),by:SY.me}))}
       toast(n>1?n+' Termine angelegt':'Termin angelegt')}
     else{const e=D.events.find(x=>x.id===ui.evForm);if(e){Object.assign(e,base);touch(e)}toast('Termin gespeichert')}
-    ui.evForm=null;save();render()},
+    ui.evForm=null;save();render();pushLive()},
   reason:f=>{const r=f.elements.r.value.trim();if(!r){toast('Bitte eine kurze Begründung angeben.');return}const R=ui.reason;ui.reason=null;
     setRs(R.ev,R.s==='nein'?{status:'nein',reason:r,mode:'',car:null}:{status:'vl',reason:r})},
   travel:f=>{const F=f.elements,mode=F.mode.value,mine=rs(f.dataset.ev,SY.me)||{};
@@ -1458,7 +1498,7 @@ Object.assign(act,{
   pubSpDel:el=>{if(!confirm('Sponsor entfernen?'))return;const P=pubEdit();setPub({sponsors:(P.sponsors||[]).filter(x=>x.id!==el.dataset.id)})},
   pubSpLogo:el=>{pubLogoTarget=el.dataset.id;document.getElementById('spLogoFile').click()},
   evLive:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);if(!e)return;const v=prompt('Link zu den Live-Ergebnissen (leer lassen zum Entfernen):',e.live||'');if(v===null)return;
-    const u=v.trim();if(u&&!safeUrl(u)){toast('Bitte einen vollständigen Link mit https:// eingeben.');return}e.live=u;touch(e);save();render();toast(u?'Ergebnis-Link gespeichert':'Ergebnis-Link entfernt')},
+    const u=v.trim();if(u&&!safeUrl(u)){toast('Bitte einen vollständigen Link mit https:// eingeben.');return}e.live=u;touch(e);save();render();pushLive();toast(u?'Ergebnis-Link gespeichert, auch auf der öffentlichen Startseite':'Ergebnis-Link entfernt')},
   kv:el=>{ui.kv=el.dataset.k;render()},
   goEv:el=>{ui.tab='termine';ui.openEv=el.dataset.ev;render();setTimeout(()=>{const a=document.querySelector(`[data-act=evOpen][data-ev="${el.dataset.ev}"]`);if(a)a.closest('.ev').scrollIntoView({behavior:'smooth',block:'start'})},50)},
   msgEv:el=>{const e=D.events.find(x=>x.id===el.dataset.ev);if(!e)return;const ms=activeMembers();
@@ -1472,12 +1512,12 @@ Object.assign(act,{
 const _delMove=act.delMove;act.delMove=el=>{const mv=D.moves.find(m=>m.id===el.dataset.id);if(mv&&mv.type==='trans'){if(!confirm('Umbuchung auf beiden Seiten löschen?'))return;const tw=D.team.find(x=>x.link===mv.id);tomb(mv.id);D.moves=D.moves.filter(m=>m!==mv);if(tw){tomb(tw.id);D.team=D.team.filter(x=>x!==tw)}save();render();return}_delMove(el)};
 Object.assign(forms,{
   pubBase:f=>{const F=f.elements;const u=F.insta.value.trim();if(u&&!safeUrl(u)){toast('Instagram-Link bitte mit https:// angeben.');return}
-    const posts=F.posts.value.split(/\s+/).map(x=>x.trim()).filter(Boolean);if(posts.some(x=>!safeUrl(x))){toast('Instagram-Beiträge bitte als vollständige Links angeben.');return}
+    const posts=F.posts.value.split(/\s+/).map(x=>x.trim().split('?')[0]).filter(Boolean);if(posts.some(x=>!safeUrl(x))){toast('Instagram-Beiträge bitte als vollständige Links angeben.');return}
     setPub({training:{day:F.day.value.trim(),time:F.time.value.trim(),text:F.ttext.value.trim()},mail:F.mail.value.trim(),place:{name:F.pname.value.trim(),addr:F.addr.value.trim(),maps:safeUrl(F.maps.value)},insta:u,instaPosts:posts.slice(0,3)});toast('Gespeichert. Zum Anzeigen noch veröffentlichen.')},
   pubNews:f=>{const F=f.elements;if(!F.title.value.trim())return;const l=F.link.value.trim();if(l&&!safeUrl(l)){toast('Link bitte mit https:// angeben.');return}
     const P=pubEdit();setPub({news:[...(P.news||[]),{id:uid(),title:F.title.value.trim(),date:F.date.value||todayStr(),text:F.text.value.trim(),link:l}]});toast('Neuigkeit hinzugefügt. Zum Anzeigen noch veröffentlichen.')},
   pubSp:f=>{const F=f.elements;const u=F.u.value.trim();if(u&&!safeUrl(u)){toast('Webseite bitte mit https:// angeben.');return}const P=pubEdit();setPub({sponsors:[...(P.sponsors||[]),{id:uid(),name:F.n.value.trim(),url:u,logo:''}]})},
-  pubGo:async f=>{const F=f.elements;if(F.t.value.trim())SY.pubToken=F.t.value.trim();SY.pubRepo=F.r.value.trim()||'Rot-Blau-Dartkasse';saveSyncCfg();
+  pubGo:async f=>{const F=f.elements;if(F.t.value.trim())SY.pubToken=F.t.value.trim().replace(/\s/g,'');SY.pubRepo=F.r.value.trim()||'Rot-Blau-Dartkasse';saveSyncCfg();
     if(!SY.pubToken){toast('Bitte den Veröffentlichungs-Token eintragen.');return}
     const b=f.querySelector('button');b.disabled=true;b.textContent='Wird veröffentlicht …';
     try{await publishPublic();PUB=null;render();toast('Veröffentlicht. Nach etwa einer Minute ist die Startseite aktualisiert.')}catch(e){b.disabled=false;b.textContent='Veröffentlichen';toast('Veröffentlichen fehlgeschlagen: '+(e.message||e))}},
